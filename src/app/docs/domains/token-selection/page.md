@@ -1,0 +1,81 @@
+---
+title: Token selection
+---
+
+When a position slot opens up, **token selection** decides which symbol fills it. The decision is two-stage: first, *which selection algorithm runs* (override / fast-track / BTC-bias / fallback), and second, *how candidate symbols are ranked* by that algorithm. This chapter covers the ranking math; the selection-algorithm choice belongs to the open phase of the [position lifecycle](/docs/lifecycles/position-lifecycle#open). {% .lead %}
+
+This is the **business-domain lens** view. Direction is decided upstream by the [signal → direction](/docs/lifecycles/signal-direction) pipeline; this layer ranks symbols of the matching direction.
+
+---
+
+## The four selection priorities
+
+Before any score is computed, one of four priorities is chosen:
+
+| Priority | When it runs | Uses scoring? |
+|---|---|---|
+| **Override** | Operator pinned a specific symbol → slot | No — bypasses scoring entirely |
+| **Fast-track** | A recently-closed winning trade is showing fresh signal — re-enter same symbol fast | Skips correlation / elasticity checks |
+| **BTC-bias** | Default. Direction-bias mode where wrong-sign-correlation candidates are hard-rejected | Yes (with hard sign filter pre-score) |
+| **Fallback** | BTC-bias produced no candidate | Yes (no sign filter — accept either direction's correlation) |
+
+Only **BTC-bias** and **fallback** use the scoring formula below. Override and fast-track route around it.
+
+---
+
+## The score formula
+
+```
+   base       = log(1 + |elasticity[tf]|) × |correlation[tf]|
+   multiplier = stability_weight × diversification_penalty × s_r_proximity
+   score      = base × multiplier
+```
+
+`tf` is the symbol's own concluded timeframe in BTC-bias mode, or the best-scoring timeframe across the configured set in fallback mode. Direction is implicit: LONG uses `elasticity_long`, SHORT uses `elasticity_short`. Both inputs are absolute-valued — sign of either is irrelevant, direction-specific behaviour is upstream.
+
+---
+
+## Why log-compress the base
+
+{% callout title="Architectural decision" %}
+Raw `elasticity × |correlation|` over-weights freak high-elasticity outliers. A 100× elasticity / 0.4 correlation token scores 40 under raw multiplication, dwarfing a 5× / 0.9 token (4.5). The log compresses the gap to ~1.5× — strong correlation stays competitive with extreme amplitude. The intent: a *reliable*, well-correlated mover beats a wild, weakly-correlated one of similar net signal strength.
+{% /callout %}
+
+---
+
+## The three multipliers
+
+### Stability weight (`btc_correlation_stability`)
+
+A 0.7 correlation that's *steady* across windows is a more reliable signal than a 0.9 that's *averaging* a jittery underlying series. Stability is the standard deviation of the sliding-window correlation series, persisted at correlation-compute time.
+
+Rule: `max(0, 1 - 2 × stddev)`. So 0.05 stddev → 0.90 multiplier, 0.20 → 0.60, 0.50 → 0. Missing or non-positive stability → 1.0 (graceful degrade — never penalise for absence of data).
+
+### Batch diversification penalty
+
+Within a single open batch, picking the same direction repeatedly on highly-correlated symbols compounds risk on one side of the book. The penalty discounts a candidate proportionally to how many already-picked symbols in this batch share its direction *and* its correlation cluster. The intent: spread risk across uncorrelated movers within a batch, not pile six longs onto BTC, ETH, SOL, AVAX, NEAR, INJ at once.
+
+### S/R proximity
+
+A candidate near a major support / resistance is amplitude-rich (more room to move) but lower-probability — it has a clear barrier in the way. The proximity multiplier slightly downweights candidates pinned hard against an obvious S/R. Soft signal, not a hard reject.
+
+---
+
+## Hard sign filter (BTC-bias only)
+
+Before scoring, BTC-bias mode hard-rejects any candidate whose correlation sign disagrees with the direction:
+
+```
+   LONG  + correlation < 0  ─► rejected
+   SHORT + correlation > 0  ─► rejected
+```
+
+Fallback mode skips this — it accepts wrong-sign-correlation candidates because the alternative is no candidate at all.
+
+---
+
+## Cross-lens links
+
+- **[Signal → direction](/docs/lifecycles/signal-direction)** — decides the direction this layer ranks within
+- **[Position lifecycle](/docs/lifecycles/position-lifecycle#open)** — where token selection runs (slot-assign step)
+- **[Indicators](/docs/domains/indicators)** — the per-timeframe correlation + elasticity readouts the score consumes
