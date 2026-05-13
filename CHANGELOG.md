@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.0] — 2026-05-13
+
+### Brand
+- Replaced template logomark with the Kraite snake (krait-500 `#22c55e`).
+- Switched accent palette across the site from `sky-*` to `green-*` (Tailwind defaults map to brand greens).
+- Recoloured Quick Link hover gradient and lightbulb icon gradient to the krait green ramp (`#4ade80 → #22c55e → #15803d`).
+- Updated Prism code-block string token to the green palette.
+
+---
+
 ## 2025-07-29
 
 - Update to React 19 and Next.js 15.4
