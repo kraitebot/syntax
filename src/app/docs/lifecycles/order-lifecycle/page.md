@@ -95,4 +95,4 @@ A position with 6 LIMIT rungs + 1 TP + 1 SL is 8 orders. If retry semantics live
 - **[Position lifecycle](/docs/lifecycles/position-lifecycle)** — the parent flow that orchestrates these orders
 - **[Orders](/docs/domains/orders)** — the domain rules for each order type
 - **[WebSocket streams](/docs/subsystems/websocket-streams)** — the push path that delivers fill events
-- **[Eos + Iris (workers)](/docs/servers/eos-iris)** — where every `Place*OrderJob` actually runs
+- **[Eos + Iris + Nyx (workers)](/docs/servers/eos-iris)** — where every `Place*OrderJob` actually runs

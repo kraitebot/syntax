@@ -239,5 +239,5 @@ Autonomy gate cleared on 2026-04-23. Live book runs up to 12 concurrent position
 ## See this lifecycle from another angle
 
 - **[Dispatch daemon](/docs/subsystems/dispatch-daemon)** — what dispatches the open/close blocks and how the daemon survives restarts
-- **[Eos + Iris](/docs/servers/eos-iris)** — which workers consume position-lifecycle queues
+- **[Eos + Iris + Nyx](/docs/servers/eos-iris)** — which workers consume position-lifecycle queues
 - **[Open positions](/docs/domains/open-positions)** — what a Position row *is* and the state machine governing it

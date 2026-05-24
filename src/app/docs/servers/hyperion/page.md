@@ -2,7 +2,7 @@
 title: Hyperion (database + Redis)
 ---
 
-Hyperion is Kraite's **stateful core** — one dedicated AMD-EPYC box that runs only MySQL and Redis. Every other server in the fleet (athena for ingestion + web, eos / iris for trading workers, tyche for indicators) reads and writes against this single shared backend over the private `kraite-net` network. Hyperion runs no Laravel code, no Horizon, no daemons; it does two storage jobs and gets out of the way. {% .lead %}
+Hyperion is Kraite's **stateful core** — one dedicated AMD-EPYC box that runs only MySQL and Redis. Every other server in the fleet (athena for ingestion + web, eos / iris / nyx for trading workers, tyche for indicators) reads and writes against this single shared backend over the private `kraite-net` network. Hyperion runs no Laravel code, no Horizon, no daemons; it does two storage jobs and gets out of the way. {% .lead %}
 
 This is the **server lens** view. For application-level data shapes, see the [Domains](/docs/domains/open-positions) chapters.
 
@@ -21,7 +21,8 @@ No web server, no PHP-FPM, no Horizon supervisor, no scheduler. Every Laravel pr
    athena ──┐
    eos    ──┤    private LAN (10.0.0.0/16)
    iris   ──┼──────────────────────────► Hyperion
-   tyche  ──┘                           ├─ MySQL  :3306
+   nyx    ──┤                           ├─ MySQL  :3306
+   tyche  ──┘                           ├─ Redis  :6379
                                         └─ Redis  :6379
 ```
 

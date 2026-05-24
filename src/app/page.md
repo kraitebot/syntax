@@ -55,7 +55,7 @@ No live data, no metrics, no exchange state. For runtime observability check the
 The demo chapter is **[Position lifecycle](/docs/lifecycles/position-lifecycle)** — the canonical deep chapter that defines the depth and tone for everything else. The other lens views of the same flow live at:
 
 - [Dispatch daemon](/docs/subsystems/dispatch-daemon) — subsystem angle
-- [Eos + Iris](/docs/servers/eos-iris) — server angle
+- [Eos + Iris + Nyx](/docs/servers/eos-iris) — server angle
 - [Open positions](/docs/domains/open-positions) — domain angle
 
 Other navigation entries are stubbed and will fill in as `/kraite-tag` runs touch them.

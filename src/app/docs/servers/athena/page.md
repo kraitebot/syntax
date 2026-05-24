@@ -4,7 +4,7 @@ title: Athena (ingestion + web)
 
 Athena is Kraite's **ingestion brain and web edge** in one box — the box that decides what runs and when, *and* serves every public-facing surface. It owns the Laravel scheduler, the dispatch daemon, the long-lived WebSocket daemons that push exchange events into the system, and the nginx vhosts for the operator UI, the marketing site, and the public docs site. Athena does almost no exchange execution work itself; that's deliberate. {% .lead %}
 
-This is the **server lens** view. For the consumer side of the queues athena populates, see [eos + iris](/docs/servers/eos-iris).
+This is the **server lens** view. For the consumer side of the queues athena populates, see [eos + iris + nyx](/docs/servers/eos-iris).
 
 ---
 
@@ -50,7 +50,7 @@ The dispatch daemon's tick loop holds an open Redis connection that ticks 10 ste
 
 ## Failure isolation
 
-A reboot of athena takes down the scheduler, the dispatch daemon, the `user-data-stream` Horizon pool, both WS streams, and every public vhost simultaneously. Workers on eos / iris / tyche continue draining whatever was already enqueued in Redis on hyperion, but nothing new gets dispatched until athena is back. This is the single largest failure-domain blast radius in the topology.
+A reboot of athena takes down the scheduler, the dispatch daemon, the `user-data-stream` Horizon pool, both WS streams, and every public vhost simultaneously. Workers on eos / iris / nyx / tyche continue draining whatever was already enqueued in Redis on hyperion, but nothing new gets dispatched until athena is back. This is the single largest failure-domain blast radius in the topology.
 
 Mitigation:
 
@@ -68,5 +68,5 @@ Mitigation:
 - **[WebSocket streams](/docs/subsystems/websocket-streams)** — the two long-lived daemons hosted here
 - **[Horizon queues](/docs/subsystems/horizon-queues)** — the queue surface athena populates
 - **[Hyperion (database + Redis)](/docs/servers/hyperion)** — the stateful core athena depends on
-- **[Eos + Iris (workers)](/docs/servers/eos-iris)** — the workers that drain trading queues
+- **[Eos + Iris + Nyx (workers)](/docs/servers/eos-iris)** — the workers that drain trading queues
 - **[Tyche (indicators + cronjobs)](/docs/servers/tyche)** — the isolated worker for indicators
