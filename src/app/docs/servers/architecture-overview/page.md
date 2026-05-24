@@ -2,77 +2,79 @@
 title: Server architecture overview
 ---
 
-Kraite runs on a six-server topology, each box with a single, well-defined role: one ingestion brain, two interchangeable position workers, one indicator worker, one database, one web edge. Every server runs `APP_ENV=production` and pulls shared environment from `/home/waygou/.env.kraite`. Roles are cleanly separated so any single box can be lost (or redeployed) without dragging down the rest of the system. {% .lead %}
+Kraite runs on a five-box Hetzner topology, each box with a well-defined role: one stateful core (database + Redis), one ingestion brain that also hosts the public web vhosts, two interchangeable trading workers split by Binance per-IP weight, and one isolated worker for indicator throttling. Every server runs `APP_ENV=production` and connects to the others over the private `kraite-net` (10.0.0.0/16) network. Roles are cleanly separated so any single box can be lost (or redeployed) without dragging down the rest of the system. {% .lead %}
 
 This is the **server lens** index. Each box has its own canonical chapter; this page is the map.
 
 ---
 
-## The six servers
+## The five boxes
 
 | Server | Role | HORIZON_ENV | Canonical chapter |
 |---|---|---|---|
-| **Athena** | Ingestion — scheduler, Redis, dispatch daemon, WS streams | `athena` | [Athena](/docs/servers/athena) |
-| **Apollo** | Worker — positions / orders / priority | `apollo` | [Apollo + Ares](/docs/servers/apollo-ares) |
-| **Ares** | Worker — identical to Apollo (hot spare + capacity doubling) | `ares` | [Apollo + Ares](/docs/servers/apollo-ares) |
-| **Artemis** | Indicator worker — TAAPI fan-out, dedicated queue | `artemis` | (per-server chapter pending) |
-| **Zeus** | Database — MySQL only | — | [Zeus](/docs/servers/zeus) |
-| **Hermes** | Web — `kraite.com` + `admin.kraite.com` | — | [Hermes](/docs/servers/hermes) |
+| **Hyperion** | Database (MySQL 8.4.8) + Redis (8.0.5) | — | [Hyperion](/docs/servers/hyperion) |
+| **Athena** | Ingestion (scheduler, dispatch daemon, WS streams, user-data Horizon) + Web (admin, kraite.com, syntax) | `athena` | [Athena](/docs/servers/athena) |
+| **Eos** | Trading worker — positions / orders / priority (Binance accounts 1–25) | `eos` | [Eos + Iris](/docs/servers/eos-iris) |
+| **Iris** | Trading worker — positions / orders / priority (Binance accounts 26–50 + Bitget) | `iris` | [Eos + Iris](/docs/servers/eos-iris) |
+| **Tyche** | Isolated worker — indicators (20) + cronjobs (5) | `tyche` | [Tyche](/docs/servers/tyche) |
 
-Hostnames map to public IPs in shared DNS; refer to the operator runbook for the live mapping.
+Hostnames map to public IPs in the operator's credentials store; refer to the operator runbook for the live mapping.
 
 ---
 
 ## Topology at a glance
 
 ```
-                       ┌──────────┐
-                       │  Hermes  │  (kraite.com, admin.kraite.com)
-                       │   web    │
-                       └────┬─────┘
-                            │ HTTPS
-                            ▼
-        ┌──────────────────────────────────────┐
-        │             Athena (brain)           │
-        │  scheduler · daemon · Redis · WS     │
-        └─┬────────┬────────────┬───────────┬──┘
-          │ Redis  │ Redis      │ Redis     │ Redis
-          ▼        ▼            ▼           ▼
-      ┌──────┐ ┌──────┐    ┌────────┐  ┌─────────┐
-      │Apollo│ │ Ares │    │Artemis │  │  Zeus   │
-      │workr │ │workr │    │ind-fan │  │ MySQL   │
-      └──┬───┘ └──┬───┘    └───┬────┘  └────▲────┘
-         └────────┴────────────┴────────────┘
-                  all servers → MySQL on Zeus
+                       ┌───────────┐
+                       │  Athena   │  (admin, kraite.com,
+                       │  brain    │   syntax, scheduler,
+                       │   + web   │   dispatch daemon, WS)
+                       └──┬──────┬─┘
+                          │      │ Redis ticks (private LAN)
+                          │      ▼
+                          │  ┌────────────┐
+                          │  │  Hyperion  │  (MySQL + Redis)
+                          │  └─▲─▲─▲──────┘
+                          │    │ │ │
+              dispatched  │    │ │ │  all servers read/write
+              to Redis    │    │ │ │  here via 10.0.0.0/16
+                          ▼    │ │ │
+                ┌─────────┬────┴─┴─┴───────┐
+                │         │                │
+            ┌───┴──┐  ┌───┴──┐         ┌───┴───┐
+            │ Eos  │  │ Iris │         │ Tyche │
+            │ work │  │ work │         │ind+cr │
+            └──────┘  └──────┘         └───────┘
+            Binance   Binance          TAAPI fan-out,
+            1–25      26–50 + Bitget   cronjobs
 ```
 
-Redis lives on Athena (one instance, shared by every Horizon worker). MySQL lives on Zeus (one instance, shared by every app and worker). The four ingestion-class boxes (Athena, Apollo, Ares, Artemis) run Horizon; Zeus and Hermes do not.
+Redis and MySQL both live on Hyperion (the dedicated AMD-EPYC box). The three worker boxes (eos, iris, tyche) and athena all consume from that shared Redis; tyche stays out of the trading queue path so its TAAPI waits never starve eos / iris.
 
 ---
 
 ## Why the split
 
 {% callout title="Architectural decision" %}
-The brain (Athena) and the muscle (Apollo / Ares / Artemis) are split so a slow exchange round-trip on a worker never blocks the next dispatch on Athena. It also makes a worker restart a non-event: rolling out a job-class change cycles Horizon on Apollo / Ares without touching the scheduler, the daemon, or the WebSocket streams. Zeus is split off so a DB tuning change or a backup job has zero impact on application processes.
+The fleet is split along **what blocks what**. Stateful storage (Hyperion) is on its own dedicated CPU because both MySQL and Redis are latency-sensitive for the whole fleet. The brain (athena) is on its own box because the scheduler, dispatch daemon, and WS streams all need predictable wall-clock cadence — they can't compete with arbitrary trading work for CPU. Trading workers (eos, iris) are split into two by Binance's per-IP weight ceiling, not by code role. The indicator worker (tyche) is split off because TAAPI rate-limit waits would otherwise hold process slots that real-time trading needs. Five boxes, four distinct splits, each driven by a real constraint observed in production.
 {% /callout %}
 
 ---
 
 ## Failure semantics
 
-| Server lost | What stops |
+| Box lost | What stops |
 |---|---|
-| **Athena** | Scheduler + dispatch daemon + WS push paths. Workers continue draining what's already enqueued. Polling cron is gone, so re-orchestration stalls until Athena returns. |
-| **Apollo** OR **Ares** | Capacity halves on `positions` / `orders` / `priority`. The remaining worker absorbs full load; nothing breaks. |
-| **Apollo** AND **Ares** | Position state machines stall mid-flight. Athena's tiny self-sufficiency workers (2 each) keep the system inching forward at ~10 % capacity. |
-| **Artemis** | Indicator pipeline halts. Position selection stops finding new candidates; existing positions are unaffected. |
-| **Zeus** | Total system halt. Every app reads/writes here. |
-| **Hermes** | Public site + operator UI offline. Trading continues uninterrupted. |
+| **Hyperion** | Total system halt. Every app reads/writes MySQL here; every queue lives in Redis here. The recovery path is operational (B2 restore + DNS swap), not architectural. |
+| **Athena** | Scheduler + dispatch daemon + WS push paths + every public vhost. Workers on eos / iris / tyche continue draining what's already enqueued; nothing new gets dispatched until athena is back. |
+| **Eos** OR **Iris** | Capacity halves on `positions` / `orders` / `priority`. The surviving worker absorbs both account ranges (the partition is in the data model, not the queue) until the dead box returns. |
+| **Eos** AND **Iris** | Position state machines stall mid-flight. Trading freezes; existing exchange-side orders continue per their own logic. |
+| **Tyche** | Indicator pipeline + cronjobs halt. Position selection stops finding new candidates; existing positions are unaffected. |
 
 ---
 
 ## Cross-lens links
 
-- **[Horizon queues](/docs/subsystems/horizon-queues)** — the queue surface every ingestion-class server consumes
-- **[Dispatch daemon](/docs/subsystems/dispatch-daemon)** — the brain on Athena
+- **[Horizon queues](/docs/subsystems/horizon-queues)** — the queue surface every worker box consumes
+- **[Dispatch daemon](/docs/subsystems/dispatch-daemon)** — the brain on athena
 - **[Position lifecycle](/docs/lifecycles/position-lifecycle)** — what flows through this topology end-to-end

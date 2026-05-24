@@ -22,10 +22,10 @@ export const navigation = [
     href: '/docs/servers',
     links: [
       { title: 'Architecture overview', href: '/docs/servers/architecture-overview' },
-      { title: 'Athena (ingestion)', href: '/docs/servers/athena' },
-      { title: 'Apollo + Ares (workers)', href: '/docs/servers/apollo-ares' },
-      { title: 'Zeus (database)', href: '/docs/servers/zeus' },
-      { title: 'Hermes (web)', href: '/docs/servers/hermes' },
+      { title: 'Hyperion (database + Redis)', href: '/docs/servers/hyperion' },
+      { title: 'Athena (ingestion + web)', href: '/docs/servers/athena' },
+      { title: 'Eos + Iris (workers)', href: '/docs/servers/eos-iris' },
+      { title: 'Tyche (indicators + cronjobs)', href: '/docs/servers/tyche' },
     ],
   },
   {
