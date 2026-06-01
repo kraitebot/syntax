@@ -12,11 +12,11 @@ This is the **server lens** view. For the indicator math itself, see [Indicators
 
 | Queue | Processes | What it consumes |
 |---|---|---|
-| `indicators` | 20 | TAAPI fan-out — per-symbol per-timeframe indicator calculations |
-| `cronjobs` | 5 | Scheduler-triggered work that's safe to run anywhere with DB + Redis |
-| `tyche` | 2 | Server-pinned connectivity probes |
+| `indicators` | 10 | TAAPI fan-out — per-symbol per-timeframe indicator calculations |
+| `cronjobs` | 3 | Scheduler-triggered work that's safe to run anywhere with DB + Redis |
+| `tyche` | 1 | Server-pinned connectivity probes (account-onboarding flow) |
 
-The 20-process indicator pool is the **largest single pool in the fleet** — bigger than eos's, iris's, or nyx's `orders` pool. Indicators fan out hardest (every active symbol × every timeframe × every cron tick), and the throttler turns wall-clock time into a constraint that scales linearly with concurrency.
+The 10-process indicator pool is the **largest single pool in the fleet** — bigger than eos's, iris's, or nyx's `orders` pool. Indicators fan out hardest (every active symbol × every timeframe × every cron tick), and the throttler turns wall-clock time into a constraint that scales linearly with concurrency.
 
 ---
 

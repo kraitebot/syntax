@@ -1,10 +1,10 @@
 ---
-title: Athena (ingestion + web)
+title: Athena (ingestion)
 ---
 
-Athena is Kraite's **ingestion brain and web edge** in one box — the box that decides what runs and when, *and* serves every public-facing surface. It owns the Laravel scheduler, the dispatch daemon, the long-lived WebSocket daemons that push exchange events into the system, and the nginx vhosts for the operator UI, the marketing site, and the public docs site. Athena does almost no exchange execution work itself; that's deliberate. {% .lead %}
+Athena is Kraite's **ingestion brain** — the box that decides what runs and when. It owns the Laravel scheduler, the dispatch daemon, the long-lived WebSocket daemons that push exchange events into the system, and the single `user-data-stream` Horizon supervisor. Athena does almost no exchange execution work itself; that's deliberate. {% .lead %}
 
-This is the **server lens** view. For the consumer side of the queues athena populates, see [eos + iris + nyx](/docs/servers/eos-iris).
+This is the **server lens** view. For the consumer side of the queues athena populates, see [eos + iris + nyx](/docs/servers/eos-iris). For the public web surface (admin / console / kraite.com / syntax), see [pheme](/docs/servers/pheme).
 
 ---
 
@@ -21,26 +21,19 @@ This is the **server lens** view. For the consumer side of the queues athena pop
 | `kraite:cron-refresh-binance-listen-keys` | Per-minute cron — keeps each Binance listenKey alive past its 60-min auto-expiry |
 | Horizon — `user-data-stream` pool | 5 processes, the only Horizon supervisor on this box. Drains push frames produced by the user-data WebSocket daemon. |
 
-### Web surface
+### What does NOT run here (since 2026-06-01)
 
-| Vhost | Notes |
+| Removed | Lives on |
 |---|---|
-| `admin.kraite.com` | Operator UI — system dashboards, step browser, SQL query, commands runner, heartbeat, accounts drift view |
-| `kraite.com` | Public marketing site |
-| `syntax.kraite.com` | Public docs site (this site) |
-| nginx + php8.4-fpm | One web stack, three vhosts. The ingestion Laravel app has no public vhost — it's invoked only by the supervisor daemons and the cron scheduler. |
+| nginx | [pheme](/docs/servers/pheme) |
+| php8.5-fpm | [pheme](/docs/servers/pheme) |
+| `admin.kraite.com` / `console.kraite.com` / `kraite.com` / `syntax.kraite.com` vhosts | [pheme](/docs/servers/pheme) |
+
+Athena's nginx and php8.5-fpm services are `systemctl mask`'d. PHP 8.5 **CLI** is retained — the scheduler, daemons, and Horizon supervisor are all CLI processes.
 
 ---
 
-## Why ingestion and web are co-located
-
-{% callout title="Architectural decision" %}
-The previous fleet kept ingestion (athena) and web (helios) on separate boxes for blast-radius isolation. The 2026-05-24 fleet rebuild folded them together because the actual web workload is sysadmin-only admin + low-volume marketing — not enough to ever compete with the trading runtime for CPU. Co-location halves the per-month spend on the role and removes one network hop for any admin operation that calls into the ingestion artisan surface. The reliability tier argument that originally drove the split was never validated by a real incident; consolidating is the simpler shape until traffic on `kraite.com` grows enough to justify splitting it back out.
-{% /callout %}
-
----
-
-## Why these trading services are co-located
+## Why ingestion services are co-located on one box
 
 {% callout title="Architectural decision" %}
 The dispatch daemon's tick loop holds an open Redis connection that ticks 10 step-dispatcher groups per second. Network round-trips to a remote Redis would dominate the daemon's wall-clock budget — so although Redis itself lives on Hyperion, the daemon is on the box that needs the lowest-latency view of the queue surface. The WebSocket daemons live here for the same reason — they dispatch into Redis on every frame, sub-100 ms is the design budget. The cost of one extra private-network hop to Hyperion is acceptable for these hot paths; the cost of a public-internet hop would not be.
@@ -48,21 +41,29 @@ The dispatch daemon's tick loop holds an open Redis connection that ticks 10 ste
 
 ---
 
+## Why web was split off (2026-06-01)
+
+{% callout title="Architectural decision" %}
+The 2026-05-24 fleet rebuild briefly co-located the web role with ingestion on athena. In practice the web stack never got fully wired there — diagnosing `syntax.kraite.com` returning 522 from Cloudflare on 2026-06-01 surfaced that the four web hostnames were still pointing at hyperion (which doesn't serve HTTP) and athena had no nginx vhosts at all. The fix was a dedicated web host: **pheme** (CPX22, 62.238.38.113). Splitting kept athena focused on the trading runtime, gave the web stack a clean cleanroom (no leftover state), and made the per-role blast radius smaller — a pheme reboot doesn't touch trading, an athena reboot doesn't take the web stack offline.
+{% /callout %}
+
+---
+
 ## Failure isolation
 
-A reboot of athena takes down the scheduler, the dispatch daemon, the `user-data-stream` Horizon pool, both WS streams, and every public vhost simultaneously. Workers on eos / iris / nyx / tyche continue draining whatever was already enqueued in Redis on hyperion, but nothing new gets dispatched until athena is back. This is the single largest failure-domain blast radius in the topology.
+A reboot of athena takes down the scheduler, the dispatch daemon, the `user-data-stream` Horizon pool, and both WS streams simultaneously. Workers on eos / iris / nyx / hemera / tyche continue draining whatever was already enqueued in Redis on hyperion, but nothing new gets dispatched until athena is back. Pheme (web) stays up — its sites continue serving from hyperion-backed reads. This is still the single largest failure-domain blast radius in the trading topology, but it no longer simultaneously kills the operator UI.
 
 Mitigation:
 
 - Both WS daemons run under supervisor with `autostart=true` / `autorestart=true`.
 - The dispatch daemon also runs under supervisor — if it crashes, supervisor restarts it within seconds; the step-dispatcher's `recover-stale` cron will sweep any Running steps that got marooned during the gap on the next minute tick.
 - A polling sync (`kraite:cron-sync-orders`, every 5 min) re-anchors order state if the WS daemon was offline long enough to miss frames.
-- Cloudflare absorbs the public-vhost outage for the duration of the reboot — visitors see the CF error page rather than a connection-refused.
 
 ---
 
 ## Cross-lens links
 
+- **[Pheme (web)](/docs/servers/pheme)** — where the public vhosts now live
 - **[Dispatch daemon](/docs/subsystems/dispatch-daemon)** — the persistent process that's athena's beating heart
 - **[Scheduler](/docs/subsystems/scheduler)** — the cron entry-points dispatched here
 - **[WebSocket streams](/docs/subsystems/websocket-streams)** — the two long-lived daemons hosted here

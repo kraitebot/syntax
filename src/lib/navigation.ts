@@ -23,8 +23,9 @@ export const navigation = [
     links: [
       { title: 'Architecture overview', href: '/docs/servers/architecture-overview' },
       { title: 'Hyperion (database + Redis)', href: '/docs/servers/hyperion' },
-      { title: 'Athena (ingestion + web)', href: '/docs/servers/athena' },
-      { title: 'Eos + Iris + Nyx (workers)', href: '/docs/servers/eos-iris' },
+      { title: 'Athena (ingestion)', href: '/docs/servers/athena' },
+      { title: 'Pheme (web)', href: '/docs/servers/pheme' },
+      { title: 'Eos + Iris + Nyx + Hemera (workers)', href: '/docs/servers/eos-iris' },
       { title: 'Tyche (indicators + cronjobs)', href: '/docs/servers/tyche' },
     ],
   },

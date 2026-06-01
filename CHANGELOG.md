@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.2.0] — 2026-06-01
+
+### Server lens — pheme web host split
+
+- [NEW FEATURE] **New chapter — Pheme (web)** at `/docs/servers/pheme/`. Dedicated host (CPX22, `62.238.38.113`, `10.0.0.9`) that took `admin / console / kraite.com / syntax` off athena on 2026-06-01. Covers workload, connectivity model, what does NOT run there, the split rationale, and failure isolation vs. athena.
+- [IMPROVED] **Athena chapter rewritten.** Title now `Athena (ingestion)`. Web subsection removed; replaced by an explicit "What does NOT run here (since 2026-06-01)" block pointing to pheme. Failure-isolation section updated to reflect that an athena reboot no longer touches the operator UI.
+- [IMPROVED] **Architecture overview** now describes an eight-box layout. Server table + topology diagram + failure-semantics table all include pheme.
+- [IMPROVED] **Server lens landing page** — quick-link card for pheme added; athena card retitled `(ingestion)`.
+- [IMPROVED] **`navigation.ts`** — sidebar gains a `Pheme (web)` entry between Athena and the workers.
+
 ## [0.1.0] — 2026-05-13
 
 ### Brand

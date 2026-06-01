@@ -2,7 +2,7 @@
 title: Horizon queues
 ---
 
-Horizon is the consumer side of every workload Kraite dispatches. Where the [dispatch daemon](/docs/subsystems/dispatch-daemon) is the brain that decides what runs and when, Horizon queues are the muscle that does the actual exchange round-trips, indicator math, and DB writes. Horizon runs on **five boxes** — athena (single-purpose user-data-stream supervisor only), plus the four dedicated workers eos, iris, nyx, and tyche — and each one consumes a deliberately different slice of the queue surface. {% .lead %}
+Horizon is the consumer side of every workload Kraite dispatches. Where the [dispatch daemon](/docs/subsystems/dispatch-daemon) is the brain that decides what runs and when, Horizon queues are the muscle that does the actual exchange round-trips, indicator math, and DB writes. Horizon runs on **six boxes** — athena (single-purpose user-data-stream supervisor only), plus the five dedicated workers eos, iris, nyx, hemera, and tyche — and each one consumes a deliberately different slice of the queue surface. {% .lead %}
 
 This is the **subsystem lens** view. For the per-server worker counts in physical terms, see the [server architecture overview](/docs/servers/architecture-overview).
 
@@ -28,15 +28,15 @@ Every job dispatched in Kraite lands in one of seven queues:
 
 Worker counts per queue per server. Empty cells mean that server doesn't consume that queue at all:
 
-| Queue | Athena | Eos | Iris | Nyx | Tyche |
-|---|---:|---:|---:|---:|---:|
-| `user-data-stream` | 5 | — | — | — | — |
-| `cronjobs` | — | — | — | — | 5 |
-| `positions` | — | 10 | 10 | 10 | — |
-| `orders` | — | 15 | 15 | 15 | — |
-| `priority` | — | 5 | 5 | 5 | — |
-| `indicators` | — | — | — | — | 20 |
-| `<hostname>` | — | 2 | 2 | 2 | 2 |
+| Queue | Athena | Eos | Iris | Nyx | Hemera | Tyche |
+|---|---:|---:|---:|---:|---:|---:|
+| `user-data-stream` | 5 | — | — | — | — | — |
+| `cronjobs` | — | — | — | — | — | 3 |
+| `positions` | — | 5 | 5 | 5 | 5 | — |
+| `orders` | — | 8 | 8 | 8 | 8 | — |
+| `priority` | — | 3 | 3 | 3 | 3 | — |
+| `indicators` | — | — | — | — | — | 10 |
+| `<hostname>` | 1 | 1 | 1 | 1 | 1 | 1 |
 
 ```
         Redis (single instance, hosted on Hyperion)
@@ -45,14 +45,14 @@ Worker counts per queue per server. Empty cells mean that server doesn't consume
   │                                       indicators │
   └────┬──────────┬─────────┬──────────┬──────────┬──┘
        ▼          ▼         ▼          ▼          ▼
-   ┌──────┐  ┌─────┐  ┌────────────┐ ┌────────────┐┌─────┐
-   │Athena│  │Tyche│  │ Eos + Iris │ │ Eos + Iris ││Tyche│
-   │  x5  │  │ x5  │  │   + Nyx    │ │   + Nyx    ││ x20 │
-   └──────┘  └─────┘  │ x10 each   │ │ x15 each   │└─────┘
-                      └────────────┘ └────────────┘
+   ┌──────┐  ┌─────┐  ┌────────────────┐ ┌────────────────┐┌─────┐
+   │Athena│  │Tyche│  │ Eos + Iris     │ │ Eos + Iris     ││Tyche│
+   │  x5  │  │ x3  │  │ + Nyx + Hemera │ │ + Nyx + Hemera ││ x10 │
+   └──────┘  └─────┘  │  x5 each       │ │  x8 each       │└─────┘
+                      └────────────────┘ └────────────────┘
 ```
 
-Eos, Iris, and Nyx are deliberately identical — split only by Binance account range to carve the per-IP weight budget across three independent IPs. Tyche is the only consumer of `indicators` because TAAPI rate-limit accounting lives in one place; adding a second consumer would silently double the request rate.
+Eos, Iris, Nyx, and Hemera are deliberately identical — split only by Binance account range to carve the per-IP weight budget across four independent IPs. Tyche is the only consumer of `indicators` because TAAPI rate-limit accounting lives in one place; adding a second consumer would silently double the request rate.
 
 ---
 
@@ -70,7 +70,7 @@ Every server runs Horizon against the **same Redis** (on hyperion), but each one
 
 ```
 APP_ENV        = production       (everywhere — picks DB, env behaviour)
-HORIZON_ENV    = athena | eos | iris | nyx | tyche  (supervisor block)
+HORIZON_ENV    = athena | eos | iris | nyx | hemera | tyche  (supervisor block)
 HORIZON_PREFIX = kraite_athena_horizon:        (per-host Redis key namespace)
 ```
 
@@ -91,6 +91,6 @@ Mixing these up is the most common cause of a "Horizon is up but no jobs are pro
 - **[Dispatch daemon](/docs/subsystems/dispatch-daemon)** — what feeds these queues
 - **[Hyperion (database + Redis)](/docs/servers/hyperion)** — the box that hosts the Redis every consumer reads from
 - **[Athena (ingestion + web)](/docs/servers/athena)** — the user-data-stream consumer + every other dispatcher
-- **[Eos + Iris + Nyx (workers)](/docs/servers/eos-iris)** — the bulk position / order / priority workers
+- **[Eos + Iris + Nyx + Hemera (workers)](/docs/servers/eos-iris)** — the bulk position / order / priority workers
 - **[Tyche (indicators + cronjobs)](/docs/servers/tyche)** — the isolated indicator + cronjob worker
 - **[Position lifecycle](/docs/lifecycles/position-lifecycle)** — the canonical workload that flows through these queues
