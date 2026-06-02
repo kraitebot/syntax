@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.0] — 2026-06-02
+
+### New chapter — Dynamic Commands
+
+- [NEW FEATURE] **New top-level chapter — Dynamic Commands** at `/docs/dynamic-commands/`. Sits after Lifecycles in the sidebar. Documents the `/do` dispatcher pattern (`~/Herd/.dynamic-commands/` shared library, recursive sub-skill dispatch, free-form modifier contract, tool-agnostic prose authoring rules) and every command currently in the library.
+- [NEW FEATURE] **Landing page** — `/docs/dynamic-commands/page.md`. Covers the why-this-exists rationale (shared library across Claude + Codex, edit-once propagation), the invocation contract, recursion semantics, tool-agnostic authoring rules, and indexes every sub-page grouped by family (Kraite / Quanamo / Ralph / generic).
+- [NEW FEATURE] **One sub-page per command — 55 in total:**
+  - **Kraite (12):** `kraite-commit`, `kraite-deploy`, `kraite-health`, `kraite-profile`, `kraite-push`, `kraite-read-docs`, `kraite-reboot`, `kraite-release`, `kraite-server-upgrade`, `kraite-tag`, `kraite-update-docs`, `kraite-warmup`.
+  - **Quanamo (7):** `quanamo-deploy`, `quanamo-health`, `quanamo-read-docs`, `quanamo-release`, `quanamo-tag`, `quanamo-update-docs`, `quanamo-warmup`.
+  - **Ralph (9):** `ralph-archive`, `ralph-clean`, `ralph-convert`, `ralph-deploy`, `ralph-install`, `ralph-monitor`, `ralph-post-review`, `ralph-prepare`, `ralph-task`.
+  - **Generic (27):** `brainstorm`, `code-review`, `code-safe`, `commit`, `confirm`, `cv`, `distill`, `elicitate`, `explain`, `fix`, `forget`, `learn`, `memorize`, `memory`, `pest`, `prd`, `pull`, `push`, `read-docs`, `refactor`, `screenshot`, `tag`, `tm`, `troubleshoot`, `update-docs`, `upset`, `xss-audit`.
+- [IMPROVED] **`navigation.ts`** — adds the new `Dynamic Commands` section after `Lifecycles`, with one sidebar entry per command in family-grouped order.
+
 ## [0.2.0] — 2026-06-01
 
 ### Server lens — pheme web host split
