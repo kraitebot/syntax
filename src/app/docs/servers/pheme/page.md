@@ -27,7 +27,7 @@ Background jobs drain through **three per-app Horizon supervisors** — `kraite-
 | `pheme` | 1 per app (admin, kraite.com) | Server-pinned connectivity probes (account-onboarding flow) |
 | `default` | console's stock pool | Console's own dispatches |
 
-Known latent gap: admin and kraite.com currently dispatch to their `default` Redis queue, which their `pheme`-block Horizon does not consume — `REDIS_QUEUE=pheme-web` in each app's `.env` is the pending fix. All web queues are empty today, so nothing is rotting.
+Admin and kraite.com carry `REDIS_QUEUE=pheme-web` in their `.env` (since 2026-06-05), so the queue they dispatch to is the same physical `pheme-web` their Horizon consumes. Console's stock `production` block consumes the `default` queue its own dispatches land on — every app's dispatch ↔ consumption pair is aligned.
 
 ---
 
