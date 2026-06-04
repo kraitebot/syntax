@@ -12,11 +12,12 @@ This is the **server lens** view. For the indicator math itself, see [Indicators
 
 | Queue | Processes | What it consumes |
 |---|---|---|
-| `indicators` | 10 | TAAPI fan-out — per-symbol per-timeframe indicator calculations |
-| `cronjobs` | 3 | Scheduler-triggered work that's safe to run anywhere with DB + Redis |
-| `tyche` | 1 | Server-pinned connectivity probes (account-onboarding flow) |
+| `indicators` | 20 | TAAPI fan-out — per-symbol per-timeframe indicator calculations |
+| `cronjobs` | 20 | Scheduler-triggered work that's safe to run anywhere with DB + Redis |
+| `priority` | 5 | Stale tyche-bound steps promoted by `steps:recover-stale --recover-dispatched`, plus its share of the general priority lane |
+| `tyche` | 5 | Server-pinned connectivity probes (account-onboarding flow) — fan slightly wider here than the rest of the fleet because tyche is the box that drives the heaviest fan-out work |
 
-The 10-process indicator pool is the **largest single pool in the fleet** — bigger than eos's, iris's, or nyx's `orders` pool. Indicators fan out hardest (every active symbol × every timeframe × every cron tick), and the throttler turns wall-clock time into a constraint that scales linearly with concurrency.
+The 20-process indicator and cronjob pools are the **two largest pools in the fleet** — each bigger than any single trading queue. Indicators fan out hardest (every active symbol × every timeframe × every cron tick), and the throttler turns wall-clock time into a constraint that scales linearly with concurrency. The capacity bump from 10 to 20 on indicators (and 3 to 20 on cronjobs) landed with v1.53.1 once the workload outgrew the original sizing.
 
 ---
 
@@ -33,6 +34,12 @@ The cronjob queue is co-located with indicators because cron-triggered work is t
 ## Why tyche doesn't carry positions / orders
 
 Trading queues stay off tyche even though its 2 vCPU could in principle run a small worker. The cost of letting indicator throttler waits ever block a position-close atomic is far higher than the cost of paying for a dedicated box. The split is permanent.
+
+## Why tyche subscribes to `priority`
+
+{% callout title="Architectural decision" %}
+The recovery command `php artisan steps:recover-stale --recover-dispatched` rewrites a stuck step's queue to `priority` so it can be picked up immediately by whichever supervisor wins the race. Before v1.53.1, tyche was not in the priority candidate pool — so a tyche-bound indicator or cronjob step that went stale would land on a trading worker (eos / iris / nyx / hemera) that had no business running it. Adding 5 priority procs on tyche means a promoted tyche-bound step has a 1-in-5 chance of landing back home. The remaining 4-in-5 leak to trading workers is the known imperfection; the tracked fix is a per-category split (`priority-trading` vs `priority-cron`) that pins each consumer to its own lane. Until then this is the best available approximation.
+{% /callout %}
 
 ---
 

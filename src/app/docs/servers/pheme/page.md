@@ -19,11 +19,21 @@ This is the **server lens** view. For the box that creates the trading steps phe
 
 Stack: **nginx 1.28.3** terminating TLS, **php8.5-fpm** for the three Laravel apps, **Let's Encrypt** certs issued via the Cloudflare DNS-01 plugin (so the cert path works even with Cloudflare proxy in front), **Cloudflare** Full (strict) SSL mode end-to-end.
 
+Background jobs drain through **three per-app Horizon supervisors** — `kraite-horizon-admin`, `kraite-horizon-console`, `kraite-horizon-kraite` — one per Laravel checkout, each namespaced by its own Redis prefix. All three apps run `QUEUE_CONNECTION=redis`. Admin and kraite.com set `HORIZON_ENV=pheme` and get the fleet-config `pheme` block; console doesn't load kraitebot/core and runs its stock `production` block on the `default` queue.
+
+| Queue | Processes | What it consumes |
+|---|---|---|
+| `pheme-web` (logical `web`) | 2 per app (admin, kraite.com) | Web-originated background jobs — notifications, mail, billing webhooks dispatched over Redis |
+| `pheme` | 1 per app (admin, kraite.com) | Server-pinned connectivity probes (account-onboarding flow) |
+| `default` | console's stock pool | Console's own dispatches |
+
+Known latent gap: admin and kraite.com currently dispatch to their `default` Redis queue, which their `pheme`-block Horizon does not consume — `REDIS_QUEUE=pheme-web` in each app's `.env` is the pending fix. All web queues are empty today, so nothing is rotting.
+
 ---
 
 ## What does NOT run on Pheme
 
-- No Horizon (deferred — a `pheme-web` supervisor is reserved for future use; currently every Laravel app runs `QUEUE_CONNECTION=sync`).
+- No `positions` / `orders` / `priority` / `indicators` / `cronjobs` / `user-data-stream` consumer — Horizon on pheme only consumes the web lane (physical `pheme-web`), the hostname-keyed `pheme` probe queue, and console's `default` queue.
 - No exchange API calls. No outbound trading traffic of any kind.
 - No step-router consumer — the StepRouter explicitly excludes pheme from its candidate pool (per the `router-env-filter` rule), so trading work never lands here even by accident.
 - No scheduler crontab (athena owns that).

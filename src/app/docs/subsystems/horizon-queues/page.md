@@ -2,15 +2,15 @@
 title: Horizon queues
 ---
 
-Horizon is the consumer side of every workload Kraite dispatches. Where the [dispatch daemon](/docs/subsystems/dispatch-daemon) is the brain that decides what runs and when, Horizon queues are the muscle that does the actual exchange round-trips, indicator math, and DB writes. Horizon runs on **six boxes** — athena (single-purpose user-data-stream supervisor only), plus the five dedicated workers eos, iris, nyx, hemera, and tyche — and each one consumes a deliberately different slice of the queue surface. {% .lead %}
+Horizon is the consumer side of every workload Kraite dispatches. Where the [dispatch daemon](/docs/subsystems/dispatch-daemon) is the brain that decides what runs and when, Horizon queues are the muscle that does the actual exchange round-trips, indicator math, and DB writes. Horizon runs on **seven boxes** — athena (single-purpose user-data-stream supervisor only), the five dedicated workers eos, iris, nyx, hemera, and tyche, and pheme (web-originated jobs only) — and each one consumes a deliberately different slice of the queue surface. {% .lead %}
 
 This is the **subsystem lens** view. For the per-server worker counts in physical terms, see the [server architecture overview](/docs/servers/architecture-overview).
 
 ---
 
-## The seven queues
+## The eight queues
 
-Every job dispatched in Kraite lands in one of seven queues:
+Every job dispatched in Kraite lands in one of eight queues:
 
 | Queue | What lives here |
 |---|---|
@@ -18,8 +18,9 @@ Every job dispatched in Kraite lands in one of seven queues:
 | `user-data-stream` | `ProcessUserDataEventJob` frames coming off the Binance user-data WebSocket daemon |
 | `positions` | Position-block atomics — open / close / WAP / sync individual position state machines |
 | `orders` | Per-exchange order-placement and cancel atomics (the chatty queue — every `Place*OrderJob` and `Cancel*Job`) |
-| `priority` | Hot-path replacements when a position needs immediate re-orchestration (manual close detected, drift, etc.) |
+| `priority` | Hot-path replacements when a position needs immediate re-orchestration (manual close detected, drift, etc.), plus stale tyche-bound steps promoted by `steps:recover-stale --recover-dispatched` |
 | `indicators` | TAAPI-bound symbol indicator computation jobs (rate-limit-sensitive) |
+| `pheme-web` | Web-originated background jobs from the pheme web stack — notifications, mail, billing webhooks, dispatched over Redis (logical name `web`; the `{hostname}-{logical}` convention composes the physical `pheme-web`) |
 | `<hostname>` | Per-host queues for jobs that *must* run on the box that dispatched them (rare; supervisor stays warm) |
 
 ---
@@ -28,31 +29,24 @@ Every job dispatched in Kraite lands in one of seven queues:
 
 Worker counts per queue per server. Empty cells mean that server doesn't consume that queue at all:
 
-| Queue | Athena | Eos | Iris | Nyx | Hemera | Tyche |
-|---|---:|---:|---:|---:|---:|---:|
-| `user-data-stream` | 5 | — | — | — | — | — |
-| `cronjobs` | — | — | — | — | — | 3 |
-| `positions` | — | 5 | 5 | 5 | 5 | — |
-| `orders` | — | 8 | 8 | 8 | 8 | — |
-| `priority` | — | 3 | 3 | 3 | 3 | — |
-| `indicators` | — | — | — | — | — | 10 |
-| `<hostname>` | 1 | 1 | 1 | 1 | 1 | 1 |
+| Queue | Athena | Eos | Iris | Nyx | Hemera | Tyche | Pheme |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| `user-data-stream` | 5 | — | — | — | — | — | — |
+| `cronjobs` | — | — | — | — | — | 20 | — |
+| `positions` | — | 5 | 5 | 5 | 5 | — | — |
+| `orders` | — | 8 | 8 | 8 | 8 | — | — |
+| `priority` | — | 3 | 3 | 3 | 3 | 5 | — |
+| `indicators` | — | — | — | — | — | 20 | — |
+| `pheme-web` | — | — | — | — | — | — | 2 |
+| `<hostname>` | 1 | 1 | 1 | 1 | 1 | 5 | 1 |
 
-```
-        Redis (single instance, hosted on Hyperion)
-  ┌──────────────────────────────────────────────────┐
-  │ user-data  cronjobs  positions  orders  priority │
-  │                                       indicators │
-  └────┬──────────┬─────────┬──────────┬──────────┬──┘
-       ▼          ▼         ▼          ▼          ▼
-   ┌──────┐  ┌─────┐  ┌────────────────┐ ┌────────────────┐┌─────┐
-   │Athena│  │Tyche│  │ Eos + Iris     │ │ Eos + Iris     ││Tyche│
-   │  x5  │  │ x3  │  │ + Nyx + Hemera │ │ + Nyx + Hemera ││ x10 │
-   └──────┘  └─────┘  │  x5 each       │ │  x8 each       │└─────┘
-                      └────────────────┘ └────────────────┘
-```
+Fleet-wide process total: **127** — athena 6, eos 17, iris 17, nyx 17, hemera 17, tyche 50, pheme 3. Each process holds two persistent connections (MySQL + Redis); the hyperion-side ceiling is `max_connections = 256`. The current footprint sits at ~254 sustained — the next pool bump or fifth trading box needs that ceiling raised first.
 
-Eos, Iris, Nyx, and Hemera are deliberately identical — split only by Binance account range to carve the per-IP weight budget across four independent IPs. Tyche is the only consumer of `indicators` because TAAPI rate-limit accounting lives in one place; adding a second consumer would silently double the request rate.
+Eos, Iris, Nyx, and Hemera are deliberately identical — interchangeable Horizon consumers competing on the same queues, with no per-account-to-box binding by design; the four distinct public IPs spread Binance's per-IP weight budget naturally as dispatched jobs distribute. Tyche is the only consumer of `indicators` because TAAPI rate-limit accounting lives in one place; adding a second consumer would silently double the request rate. Pheme is the only consumer of `pheme-web` because that queue is the web stack's own private background-job lane — the web apps dispatch into it over Redis (`QUEUE_CONNECTION=redis`, per-app Horizon supervisors on pheme), and pheme drains it without ever touching the StepRouter candidate pool.
+
+{% callout title="Why tyche subscribes to `priority`" %}
+Tyche carries 5 processes on the `priority` queue since v1.53.1. Reason: stale tyche-bound steps promoted by `php artisan steps:recover-stale --recover-dispatched` get their queue rewritten to `priority`, and without a tyche subscription every promoted step would leak to a trading worker that has no business running an indicator or cronjob payload. The current scheme picks the priority candidate at random across the 5-supervisor pool (eos + iris + nyx + hemera + tyche), so tyche-bound work still leaks 4/5 of the time. The tracked fix is a per-category split — `priority-trading` vs `priority-cron` — that pins each consumer to its own lane. Until then the leak is the known imperfection of the priority queue.
+{% /callout %}
 
 ---
 
@@ -70,7 +64,7 @@ Every server runs Horizon against the **same Redis** (on hyperion), but each one
 
 ```
 APP_ENV        = production       (everywhere — picks DB, env behaviour)
-HORIZON_ENV    = athena | eos | iris | nyx | hemera | tyche  (supervisor block)
+HORIZON_ENV    = athena | eos | iris | nyx | hemera | tyche | pheme  (supervisor block)
 HORIZON_PREFIX = kraite_athena_horizon:        (per-host Redis key namespace)
 ```
 
@@ -93,4 +87,5 @@ Mixing these up is the most common cause of a "Horizon is up but no jobs are pro
 - **[Athena (ingestion + web)](/docs/servers/athena)** — the user-data-stream consumer + every other dispatcher
 - **[Eos + Iris + Nyx + Hemera (workers)](/docs/servers/eos-iris)** — the bulk position / order / priority workers
 - **[Tyche (indicators + cronjobs)](/docs/servers/tyche)** — the isolated indicator + cronjob worker
+- **[Pheme (web)](/docs/servers/pheme)** — the web stack and its private `pheme-web` background-job lane
 - **[Position lifecycle](/docs/lifecycles/position-lifecycle)** — the canonical workload that flows through these queues
