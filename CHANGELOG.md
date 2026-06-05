@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.1] — 2026-06-05
+
+### Chapter refresh — pheme / tyche / horizon-queues
+
+- [IMPROVED] **Pheme server chapter** — per-app Horizon reality (three supervisors: admin / console / kraite, all `QUEUE_CONNECTION=redis`), `REDIS_QUEUE=pheme-web` wiring documented as live (gap closed 2026-06-05), queue table reworked (logical `web` → physical `pheme-web`).
+- [IMPROVED] **Horizon-queues chapter** — `pheme-web` described via the `{hostname}-{logical}` composition, stale `QUEUE_CONNECTION=database` claim removed, interchangeable-worker framing restored (per-account-range claim was obsolete).
+- [IMPROVED] **Tyche chapter** — 20/20/5/5 process counts + priority-lane callout (carried from the 06-02 pass, first published here).
+
 ## [0.3.0] — 2026-06-02
 
 ### New chapter — Dynamic Commands
