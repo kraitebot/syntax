@@ -2,7 +2,7 @@
 title: Athena (ingestion)
 ---
 
-Athena is Kraite's **ingestion brain** — the box that decides what runs and when. It owns the Laravel scheduler, the dispatch daemon, the long-lived WebSocket daemons that push exchange events into the system, and the single `user-data-stream` Horizon supervisor. Athena does almost no exchange execution work itself; that's deliberate. {% .lead %}
+Athena is Kraite's **ingestion brain** — the box that decides what runs and when. It owns the Laravel scheduler, the dispatch daemon, the long-lived WebSocket daemons that push exchange events into the system, the `user-data-stream` Horizon supervisor, and — since 2026-06-07 — a secondary `indicators` pool that gives the kline lane a second outbound IP. Athena does almost no trading execution work itself; that's deliberate. {% .lead %}
 
 This is the **server lens** view. For the consumer side of the queues athena populates, see [eos + iris + nyx](/docs/servers/eos-iris). For the public web surface (admin / console / kraite.com / syntax), see [pheme](/docs/servers/pheme).
 
@@ -19,7 +19,8 @@ This is the **server lens** view. For the consumer side of the queues athena pop
 | `kraite:stream-binance-user-data` | Long-running daemon — one authenticated WebSocket per Binance account; pushes order / account events into the `user-data-stream` queue |
 | `kraite:stream-binance-prices` | Long-running daemon — `!markPrice@arr@1s` subscription; refreshes `exchange_symbols.mark_price` for every Binance-listed symbol |
 | `kraite:cron-refresh-binance-listen-keys` | Per-minute cron — keeps each Binance listenKey alive past its 60-min auto-expiry |
-| Horizon — `user-data-stream` pool | 5 processes, the only Horizon supervisor on this box. Drains push frames produced by the user-data WebSocket daemon. |
+| Horizon — `user-data-stream` pool | 5 processes. Drains push frames produced by the user-data WebSocket daemon. |
+| Horizon — `indicators` pool | 10 processes (added 2026-06-07). A second outbound IP for the kline/indicator lane — spreads the per-IP Bybit kline burst (retCode 10006) across athena + tyche and lets StepRouter rotate off a rate-limited IP. Sized below tyche's 20 so it never starves the scheduler or dispatch daemon. Safe here because athena runs no trading queues. |
 
 ### What does NOT run here (since 2026-06-01)
 
@@ -51,7 +52,7 @@ The 2026-05-24 fleet rebuild briefly co-located the web role with ingestion on a
 
 ## Failure isolation
 
-A reboot of athena takes down the scheduler, the dispatch daemon, the `user-data-stream` Horizon pool, and both WS streams simultaneously. Workers on eos / iris / nyx / hemera / tyche continue draining whatever was already enqueued in Redis on hyperion, but nothing new gets dispatched until athena is back. Pheme (web) stays up — its sites continue serving from hyperion-backed reads. This is still the single largest failure-domain blast radius in the trading topology, but it no longer simultaneously kills the operator UI.
+A reboot of athena takes down the scheduler, the dispatch daemon, the `user-data-stream` + `indicators` Horizon pools, and both WS streams simultaneously. Workers on eos / iris / nyx / hemera / tyche continue draining whatever was already enqueued in Redis on hyperion, but nothing new gets dispatched until athena is back. Indicator computation does not stop — tyche carries the lane's primary 20-process pool; losing athena's secondary 10 only trims kline-lane throughput. Pheme (web) stays up — its sites continue serving from hyperion-backed reads. This is still the single largest failure-domain blast radius in the trading topology, but it no longer simultaneously kills the operator UI.
 
 Mitigation:
 

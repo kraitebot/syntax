@@ -19,6 +19,8 @@ This is the **server lens** view. For the indicator math itself, see [Indicators
 
 The 20-process indicator and cronjob pools are the **two largest pools in the fleet** — each bigger than any single trading queue. Indicators fan out hardest (every active symbol × every timeframe × every cron tick), and the throttler turns wall-clock time into a constraint that scales linearly with concurrency. The capacity bump from 10 to 20 on indicators (and 3 to 20 on cronjobs) landed with v1.53.1 once the workload outgrew the original sizing.
 
+Since 2026-06-07 tyche is no longer the sole `indicators` consumer — athena runs a secondary 10-process pool so the lane has two outbound public IPs (with only tyche's IP it was bursting Bybit's per-IP rate limit, retCode 10006). Tyche stays the primary at 20; `cronjobs` remains tyche-only. The second consumer does not raise the aggregate API rate — the throttlers are global Redis-coordinated buckets — it only spreads the per-IP exchange-call burst and gives StepRouter an IP to rotate to. See [Horizon queues](/docs/subsystems/horizon-queues) for the full rationale.
+
 ---
 
 ## Why isolation matters here
@@ -45,7 +47,7 @@ The recovery command `php artisan steps:recover-stale --recover-dispatched` rewr
 
 ## Failure isolation
 
-A tyche crash stops indicator computation and cronjob execution. Existing positions are unaffected — trading continues on eos / iris / nyx from the data they already have. The next scheduler tick on athena keeps dispatching to a dead `indicators` queue; jobs accumulate in Redis and drain as soon as tyche returns.
+A tyche crash stops cronjob execution and slows — but no longer stops — indicator computation: since 2026-06-07 athena's secondary 10-process `indicators` pool keeps the lane partially draining, so throughput drops rather than halting. `cronjobs` is tyche-only, so scheduled fan-out work does accumulate in Redis until tyche returns. Existing positions are unaffected — trading continues on eos / iris / nyx / hemera from the data they already have.
 
 Token selection (which depends on fresh indicator output) silently stops finding new candidates while tyche is offline. The system continues to operate on existing positions; it just stops opening new ones.
 
