@@ -12,14 +12,20 @@ This is the **subsystem lens** view. Existing positions ride out the regime thro
 
 A regime computation produces a **score** (0–100) and a **band** (`Calm` / `Elevated` / `Fragile` / `Critical`). Score is persisted to `market_regime_snapshots`; the latest row is the system's view of "what does the market look like right now".
 
-| Band | Score range | Behaviour |
-|---|---|---|
-| `Calm` | low | No gating; opens proceed normally |
-| `Elevated` | moderate | No gating yet; sub-signals tracked, watched for escalation |
-| `Fragile` | high | Margin multipliers tighten; opens still allowed but at reduced size |
-| `Critical` | top | **Cooldown fired.** New opens blocked system-wide until cooldown expires |
+| Band | Score | Leverage ratio | Count cap | Margin slice | Opens |
+|---|---|---|---|---|---|
+| `Calm` | 0–39 | 100% | 100% | full | open normally |
+| `Elevated` | 40–59 | 66% | 75% | full | open — reduced leverage + count |
+| `Fragile` | 60–79 | 50% | 50% | 1.0→0.5 | open — reduced leverage + count + margin |
+| `Critical` | 80–100 | — | 0% | — | **blocked — every account, un-overridable** |
 
-The cooldown period (default 24 h) is configured via `kraite.market_regime.cooldown.hours`. The block threshold (default score ≥ 80) is `bscs_block_threshold` on the kraite singleton.
+As of **Phase 3 (2026-06-07)** each band drives three independent, stacking risk axes — all applied only when a *new* position opens, never to existing ones:
+
+- **Leverage** scales down (`floor(base × ratio)`, min 1×) so the liquidation price sits further from entry as fragility climbs.
+- **Position count** scales down (`floor(account_max × ratio)`) so fewer correlated stop-losses can fire together. Gate-only: an over-cap book freezes new opens and lets attrition catch up — it never force-closes existing positions.
+- **Margin slice** shrinks across the Fragile band (the original linear 1.0→0.5 multiplier).
+
+Smaller, further-from-liquidation, and fewer-at-once — three different ways to survive a correlated drawdown. The cooldown (default 24 h, `kraite.market_regime.cooldown.hours`) and block threshold (default ≥ 80, `bscs_block_threshold`) gate the Critical band. Every opened position records the band + direction it was born under (`positions.bscs_band`, e.g. `elevated-long`) and the raw `positions.bscs_score`.
 
 ---
 
@@ -43,25 +49,24 @@ if ($index->shouldBlockOpens()) {
 |---|---|
 | `score()` | `?int` 0–100, `null` if no compute has landed yet |
 | `band()` | `?RegimeBand` enum |
-| `shouldBlockOpens()` | `bool` — **the gate signal**, used by `HasTradingGuards::canOpenPositions()` |
+| `shouldBlockOpens()` | `bool` — **the gate signal**, used by `HasTradingGuards::canOpenPositions()`. Absolute — no override |
 | `isCooldownActive()` | `bool` — system-set block currently in force |
-| `isOverrideActive()` | `bool` — operator-set escape hatch in force |
 | `isStale()` | `bool` — score older than `freshnessMaxSeconds()` (default 6900 s) |
 | `toArray()` | Lossless dashboard payload — every field admin needs in one call |
 
 ---
 
-## Override beats cooldown
+## Critical is absolute
 
 {% callout title="Architectural decision" %}
-The gate logic is `override > cooldown > none`. If an operator sets `bscs_override_until` to some future time, the system stops blocking opens even if a system-set cooldown is active. This is the manual escape hatch — the bot's regime compute can be wrong (sudden recovery, regime mis-read, news that the model hasn't internalised), and an operator who's looking at the market in real time can override it. The reverse — a system cooldown overriding an operator override — would make the override useless. The override always wins.
+The gate logic is simply `cooldown > none`: while a Critical-armed cooldown is in the future, new opens are blocked for **every** account and nobody can bypass it. The per-account opt-out (`respect_bscs`) and the operator override (`bscs_override_until`) were both **removed in Phase 3 (2026-06-07)**. Earlier versions let an operator force opens through during a cooldown — but a manual escape hatch on a black-swan gate is exactly the wrong thing to trust under stress, and a per-account opt-out defeats a portfolio-level protection. BSCS still computes hourly and the system reacts off the coefficient automatically. The only fail-open path left is staleness: if the regime data is more than ~6 h old it can't be trusted, so the gate opens rather than lock the bot out on a broken signal.
 {% /callout %}
 
 ```
-   override_until > now()  ──► block = false  (operator wins)
+   data stale > ~6h        ──► block = false  (fail open — data untrusted)
         │ no
         ▼
-   cooldown_until > now()  ──► block = true   (system cooldown)
+   cooldown_until > now()  ──► block = true   (Critical cooldown active)
         │ no
         ▼
                               block = false   (no gate)
