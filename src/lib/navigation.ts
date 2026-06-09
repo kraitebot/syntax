@@ -15,6 +15,7 @@ export const navigation = [
       { title: 'WebSocket streams', href: '/docs/subsystems/websocket-streams' },
       { title: 'Horizon queues', href: '/docs/subsystems/horizon-queues' },
       { title: 'Market regime', href: '/docs/subsystems/market-regime' },
+      { title: 'Notifications', href: '/docs/subsystems/notifications' },
     ],
   },
   {
