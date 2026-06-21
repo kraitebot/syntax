@@ -48,7 +48,7 @@ Kraite docs span three locations:
 | hyperion | 135.181.93.226 | Database (MySQL) + Redis |
 | athena | 37.27.243.164 | Ingestion |
 | pheme | 62.238.38.113 | Web (admin, console, kraite.com, syntax) |
-| eos / iris / nyx / hemera | 204.168.137.153 / .138.83 / .129.189 / 77.42.68.254 | Workers — positions / orders / priority (interchangeable consumers) |
+| eos / iris / nyx / hemera / palaemon / aristaeus | 204.168.137.153 / .138.83 / .129.189 / 77.42.68.254 / 37.27.192.42 / 37.27.196.99 | Workers — positions / orders / priority (interchangeable consumers) |
 | tyche | 204.168.135.246 | Worker — indicators + cronjobs |
 
 SSH: `ssh -i ~/.ssh/id_ed25519_kraite root@<IP>`. All project commands as `su - <hostname> -c '...'` (user matches hostname).

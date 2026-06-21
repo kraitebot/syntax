@@ -1,16 +1,16 @@
 ---
-title: Eos + Iris + Nyx + Hemera (workers)
+title: Eos + Iris + Nyx + Hemera + Palaemon + Aristaeus (workers)
 ---
 
-Eos, Iris, Nyx, and Hemera are Kraite's four **trading worker servers** — interchangeable Horizon queue consumers that execute the bulk of the position / order workload dispatched from athena. They are stateless, identically configured boxes competing on the same `positions` / `orders` / `priority` queues. **There is no per-account-to-box binding** — any worker picks up any dispatched job. The four distinct public IPs spread Binance API call load naturally across workers as work distributes. {% .lead %}
+Eos, Iris, Nyx, Hemera, Palaemon, and Aristaeus are Kraite's six **trading worker servers** — interchangeable Horizon queue consumers that execute the bulk of the position / order workload dispatched from athena. They are stateless, identically configured boxes competing on the same `positions` / `orders` / `priority` queues. **There is no per-account-to-box binding** — any worker picks up any dispatched job. The six distinct public IPs spread Binance API call load naturally across workers as work distributes. {% .lead %}
 
 This is the **server lens** view of the position lifecycle. For the per-step flow these workers consume, jump to [position lifecycle](/docs/lifecycles/position-lifecycle).
 
 ---
 
-## What runs on Eos, Iris, Nyx, and Hemera
+## What runs on Eos, Iris, Nyx, Hemera, Palaemon, and Aristaeus
 
-All four boxes run an identical Horizon supervisor footprint:
+All six boxes run an identical Horizon supervisor footprint:
 
 | Queue | Processes | What it consumes |
 |---|---|---|
@@ -23,7 +23,7 @@ Anything that holds a position-blocking exchange round-trip lives here, not on a
 
 ---
 
-## Why four boxes, not one
+## Why six boxes, not one
 
 | Box | Public IP | Status |
 |---|---|---|
@@ -31,13 +31,15 @@ Anything that holds a position-blocking exchange round-trip lives here, not on a
 | **Iris** | 204.168.138.83 | Online — Binance per-IP weight bucket #2 |
 | **Nyx** | 204.168.129.189 | Joined 2026-05-24 — Binance per-IP weight bucket #3 |
 | **Hemera** | 77.42.68.254 | Joined 2026-05-30 — Binance per-IP weight bucket #4 |
+| **Palaemon** | 37.27.192.42 | Joined 2026-06-12 — Binance per-IP weight bucket #5 |
+| **Aristaeus** | 37.27.196.99 | Joined 2026-06-12 — Binance per-IP weight bucket #6 |
 
 {% callout title="Architectural decision" %}
-Binance applies its REST + WebSocket rate-limit weight budget **per source IP**, not per account. With a single worker box, every account's order traffic competes for the same ceiling — and during a volatile window (many simultaneous SL triggers, a fan-out of fresh DCA fills) the box would saturate and exchange calls would start getting throttled or banned. Four boxes with four distinct public IPs quadruples the available weight headroom without changing the code path. The naming pair is poetic too: hemera (primordial day) joins nyx (primordial night) so the dawn/day/night/messenger lineage carries through the worker tier.
+Binance applies its REST + WebSocket rate-limit weight budget **per source IP**, not per account. With a single worker box, every account's order traffic competes for the same ceiling — and during a volatile window (many simultaneous SL triggers, a fan-out of fresh DCA fills) the box would saturate and exchange calls would start getting throttled or banned. Six boxes with six distinct public IPs give six times the available weight headroom without changing the code path. The naming stays poetic too: hemera (primordial day) joins nyx (primordial night); palaemon (sea-protector) and aristaeus (god of the practical arts) extend the lineage as the fifth and sixth trading workers.
 {% /callout %}
 
 {% callout title="No per-account binding" %}
-There is **no per-account-to-box routing** in Kraite by design. Accounts live in the shared DB; athena (the ingestion server) creates step classes and dispatches them onto the `positions` / `orders` / `priority` queues; eos / iris / nyx / hemera all consume from the same Redis queues and any of the four workers can process any account's jobs. Because each worker holds a distinct public IP, the SAME account's outbound Binance API calls flow through whichever IP the worker holding the current job has — naturally spreading the per-IP weight load across the four IPs without any explicit account-to-box mapping. The four workers are pure capacity expansion + IP diversity, not routing logic.
+There is **no per-account-to-box routing** in Kraite by design. Accounts live in the shared DB; athena (the ingestion server) creates step classes and dispatches them onto the `positions` / `orders` / `priority` queues; eos / iris / nyx / hemera / palaemon / aristaeus all consume from the same Redis queues and any of the six workers can process any account's jobs. Because each worker holds a distinct public IP, the SAME account's outbound Binance API calls flow through whichever IP the worker holding the current job has — naturally spreading the per-IP weight load across the six IPs without any explicit account-to-box mapping. The six workers are pure capacity expansion + IP diversity, not routing logic.
 {% /callout %}
 
 ---
@@ -54,15 +56,15 @@ TAAPI's 75 req / 15 s rate limit means the indicator queue spends a substantial 
 
 A worker crash takes down the steps mid-flight on that box. The orchestrator-level retry on athena re-dispatches the failed atomic to whichever worker is alive next tick. Because every order-placement atomic is **idempotent on `exchange_order_id`** ([decision documented in the open phase](/docs/lifecycles/position-lifecycle#decision-retry-idempotency-on-order-placements)), a worker swap mid-block does not produce duplicate orders on the exchange.
 
-Loss of *all four* workers is the only mode that stalls trading. Athena keeps dispatching to a dead queue and the operator restores at least one worker. No exchange-side cleanup is required because nothing got placed in the dead window.
+Loss of *all six* workers is the only mode that stalls trading. Athena keeps dispatching to a dead queue and the operator restores at least one worker. No exchange-side cleanup is required because nothing got placed in the dead window.
 
-Loss of *one* worker reduces fleet capacity to three-quarters on positions / orders / priority, but the surviving workers absorb the dead box's account range (Binance is partitioned in the data model; the actual jobs just all land on the surviving IPs until the dead box returns). Loss of *three* workers reduces capacity to one-quarter but trading continues at degraded throughput.
+Loss of *one* worker reduces fleet capacity to five-sixths on positions / orders / priority, but the surviving workers absorb the dead box's account range (Binance is partitioned in the data model; the actual jobs just all land on the surviving IPs until the dead box returns). Loss of *three* workers reduces capacity to half but trading continues at degraded throughput.
 
 ---
 
 ## Horizon restart contract
 
-The Horizon-restart-after-job-class-change rule (`php artisan horizon:terminate` after editing any class under `Jobs/`, `Listeners/`, queued classes) applies to **Eos, Iris, Nyx, and Hemera**, plus tyche for indicator / cronjob classes — athena's `user-data-stream` supervisor is a separate pool and picks up changes on its own restart cycle, and the dispatch daemon is yet another supervisor entirely.
+The Horizon-restart-after-job-class-change rule (`php artisan horizon:terminate` after editing any class under `Jobs/`, `Listeners/`, queued classes) applies to **Eos, Iris, Nyx, Hemera, Palaemon, and Aristaeus**, plus tyche for indicator / cronjob classes — athena's `user-data-stream` supervisor is a separate pool and picks up changes on its own restart cycle, and the dispatch daemon is yet another supervisor entirely.
 
 ---
 

@@ -13,7 +13,7 @@ title: Kraite — reboot
 /do kraite-reboot                  # sweep mode — every server needing a reboot
 ```
 
-Valid hostnames: `athena`, `pheme`, `eos`, `iris`, `nyx`, `hemera`, `tyche`, `hyperion`. Unknown hostname → STOP with the valid list.
+Valid hostnames: `athena`, `pheme`, `eos`, `iris`, `nyx`, `hemera`, `palaemon`, `aristaeus`, `tyche`, `hyperion`. Unknown hostname → STOP with the valid list.
 
 **Per-invocation approval.** A "yes" applies to that one host only. Rebooting another host in the same session re-asks. The session-wide "yes" from sweep mode does NOT bypass per-host approvals.
 
@@ -41,7 +41,7 @@ Every host follows the same five phases. Only Phase 2 and Phase 6 differ per rol
 |---|---|---|
 | **athena** | Whole trading loop pauses. No step advances anywhere. **User-data WS events from every exchange are LOST during the window — exchanges do NOT replay on listenKey reconnect.** TP fills, SL fills, partials, cancels, balance changes during the reboot are invisible to ingestion. | Local DB view of positions/orders may diverge from exchange. MANDATORY REST reconcile in Phase 6 |
 | **pheme** | 4 public sites 5xx through Cloudflare for ~60s | Zero trading impact |
-| **workers** (eos / iris / nyx / hemera / tyche) | Fleet drops to 2-of-3 capacity per queue while one is down | Other workers absorb the load |
+| **workers** (eos / iris / nyx / hemera / palaemon / aristaeus / tyche) | Fleet drops to 5-of-6 capacity per queue while one is down | Other workers absorb the load |
 | **hyperion** | **Highest in the fleet.** Every app disconnects, every queue stops consuming. | Every consumer must be cooled before, warmed after |
 
 ---
@@ -62,12 +62,12 @@ Without this reconcile, a TP fill that happened during the reboot leaves the loc
 
 Hyperion has no Laravel project — only MySQL and Redis. The cool-down work happens on every **consumer** before hyperion is touched:
 
-1. Ingestion fleet (athena + 5 workers) full cooldown in parallel
+1. Ingestion fleet (athena + 7 workers) full cooldown in parallel
 2. Pheme web apps (admin / console / kraite.com) `php artisan down --retry=60`
 
 Phase 4 on hyperion ALSO probes MySQL TCP (3306) and Redis TCP (6379) accepting connections — not just SSH — before declaring hyperion back. The server can SSH-in before mysqld or Redis has finished initialising.
 
-Phase 6 brings consumers back in reverse dependency order: pheme web apps first (operator sees site up before trading is fully restored), then athena's `kraite:warmup`, then the 5 workers in parallel.
+Phase 6 brings consumers back in reverse dependency order: pheme web apps first (operator sees site up before trading is fully restored), then athena's `kraite:warmup`, then the 7 workers in parallel.
 
 ---
 

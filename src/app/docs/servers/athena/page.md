@@ -52,7 +52,7 @@ The 2026-05-24 fleet rebuild briefly co-located the web role with ingestion on a
 
 ## Failure isolation
 
-A reboot of athena takes down the scheduler, the dispatch daemon, the `user-data-stream` + `indicators` Horizon pools, and both WS streams simultaneously. Workers on eos / iris / nyx / hemera / tyche continue draining whatever was already enqueued in Redis on hyperion, but nothing new gets dispatched until athena is back. Indicator computation does not stop — tyche carries the lane's primary 20-process pool; losing athena's secondary 10 only trims kline-lane throughput. Pheme (web) stays up — its sites continue serving from hyperion-backed reads. This is still the single largest failure-domain blast radius in the trading topology, but it no longer simultaneously kills the operator UI.
+A reboot of athena takes down the scheduler, the dispatch daemon, the `user-data-stream` + `indicators` Horizon pools, and both WS streams simultaneously. Workers on eos / iris / nyx / hemera / palaemon / aristaeus / tyche continue draining whatever was already enqueued in Redis on hyperion, but nothing new gets dispatched until athena is back. Indicator computation does not stop — tyche carries the lane's primary 20-process pool; losing athena's secondary 10 only trims kline-lane throughput. Pheme (web) stays up — its sites continue serving from hyperion-backed reads. This is still the single largest failure-domain blast radius in the trading topology, but it no longer simultaneously kills the operator UI.
 
 Mitigation:
 

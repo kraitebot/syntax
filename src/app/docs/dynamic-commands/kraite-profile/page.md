@@ -12,7 +12,7 @@ Run standalone, it dumps the matched profile row for Bruno. Run recursively from
 
 | Folder | Profile | Deploy target | Tag? | CI gate? | Tests | Docs phase |
 |---|---|---|---|---|---|---|
-| `ingestion.kraite.test` | **ingestion** | athena + 5 workers (eos, iris, nyx, hemera, tyche) | yes | hard gate | step-dispatcher + project, must pass | full (raw specs + syntax site) |
+| `ingestion.kraite.test` | **ingestion** | athena + 7 workers (eos, iris, nyx, hemera, palaemon, aristaeus, tyche) | yes | hard gate | step-dispatcher + project, must pass | full (raw specs + syntax site) |
 | `admin.kraite.test` | **web-app-with-queue** | pheme | yes | no | if suite exists | none |
 | `console.kraite.test` | **web-app-with-queue** | pheme | yes | no | if suite exists | none |
 | `kraite.test` | **web-app** | pheme | yes | no | if suite exists | none |
@@ -38,15 +38,15 @@ The post-v1.49.8 release ordering: deploy ALL boxes first (no mixed-code window)
 
 | Step | Boxes | Why |
 |---|---|---|
-| 1. Deploy code | athena + eos + iris + nyx + hemera + tyche (parallel) | one tag fleet-wide before any warmup |
-| 2. Warmup workers | eos + iris + nyx + hemera + tyche (parallel) | consumers must be online before athena resumes |
+| 1. Deploy code | athena + eos + iris + nyx + hemera + palaemon + aristaeus + tyche (parallel) | one tag fleet-wide before any warmup |
+| 2. Warmup workers | eos + iris + nyx + hemera + palaemon + aristaeus + tyche (parallel) | consumers must be online before athena resumes |
 | 3. Warmup athena | athena | scheduler cron + dispatch daemon + WS streams come back last |
 
 ---
 
 ## Horizon queue assignment
 
-| Queue | athena | eos / iris / nyx / hemera | tyche |
+| Queue | athena | eos / iris / nyx / hemera / palaemon / aristaeus | tyche |
 |---|---|---|---|
 | `user-data-stream` | 5 | — | — |
 | `positions` | — | 5 each | — |
@@ -72,7 +72,7 @@ Standalone invocation prints:
 
 ## Cross-lens links
 
-- **[Architecture overview](/docs/servers/architecture-overview)** — the 8-box fleet these profiles map onto
+- **[Architecture overview](/docs/servers/architecture-overview)** — the 10-box fleet these profiles map onto
 - **[Athena (ingestion)](/docs/servers/athena)** — the box ingestion-profile commands target first
 - **[Pheme (web)](/docs/servers/pheme)** — the box all web profiles deploy to
 - **[Kraite — release](/docs/dynamic-commands/kraite-release)** — the parent pipeline that branches off this profile

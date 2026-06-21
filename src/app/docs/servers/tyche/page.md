@@ -40,14 +40,14 @@ Trading queues stay off tyche even though its 2 vCPU could in principle run a sm
 ## Why tyche subscribes to `priority`
 
 {% callout title="Architectural decision" %}
-The recovery command `php artisan steps:recover-stale --recover-dispatched` rewrites a stuck step's queue to `priority` so it can be picked up immediately by whichever supervisor wins the race. Before v1.53.1, tyche was not in the priority candidate pool — so a tyche-bound indicator or cronjob step that went stale would land on a trading worker (eos / iris / nyx / hemera) that had no business running it. Adding 5 priority procs on tyche means a promoted tyche-bound step has a 1-in-5 chance of landing back home. The remaining 4-in-5 leak to trading workers is the known imperfection; the tracked fix is a per-category split (`priority-trading` vs `priority-cron`) that pins each consumer to its own lane. Until then this is the best available approximation.
+The recovery command `php artisan steps:recover-stale --recover-dispatched` rewrites a stuck step's queue to `priority` so it can be picked up immediately by whichever supervisor wins the race. Before v1.53.1, tyche was not in the priority candidate pool — so a tyche-bound indicator or cronjob step that went stale would land on a trading worker (eos / iris / nyx / hemera / palaemon / aristaeus) that had no business running it. Adding 5 priority procs on tyche means a promoted tyche-bound step has a 1-in-7 chance of landing back home (the pool is the six trading workers plus tyche). The remaining 6-in-7 leak to trading workers is the known imperfection; the tracked fix is a per-category split (`priority-trading` vs `priority-cron`) that pins each consumer to its own lane. Until then this is the best available approximation.
 {% /callout %}
 
 ---
 
 ## Failure isolation
 
-A tyche crash stops cronjob execution and slows — but no longer stops — indicator computation: since 2026-06-07 athena's secondary 10-process `indicators` pool keeps the lane partially draining, so throughput drops rather than halting. `cronjobs` is tyche-only, so scheduled fan-out work does accumulate in Redis until tyche returns. Existing positions are unaffected — trading continues on eos / iris / nyx / hemera from the data they already have.
+A tyche crash stops cronjob execution and slows — but no longer stops — indicator computation: since 2026-06-07 athena's secondary 10-process `indicators` pool keeps the lane partially draining, so throughput drops rather than halting. `cronjobs` is tyche-only, so scheduled fan-out work does accumulate in Redis until tyche returns. Existing positions are unaffected — trading continues on eos / iris / nyx / hemera / palaemon / aristaeus from the data they already have.
 
 Token selection (which depends on fresh indicator output) silently stops finding new candidates while tyche is offline. The system continues to operate on existing positions; it just stops opening new ones.
 

@@ -13,7 +13,7 @@ title: Kraite — deploy
 | Usage | Behaviour |
 |---|---|
 | `/do kraite-deploy` (from `ingestion.kraite.test`) | Full multi-server sequence — cooldown all → deploy all → workers first → athena last |
-| `/do kraite-deploy <hostname>` (ingestion only) | Single-server deploy. Hostname ∈ `athena`, `eos`, `iris`, `nyx`, `hemera`, `tyche` |
+| `/do kraite-deploy <hostname>` (ingestion only) | Single-server deploy. Hostname ∈ `athena`, `eos`, `iris`, `nyx`, `hemera`, `palaemon`, `aristaeus`, `tyche` |
 | `/do kraite-deploy` (from any web project) | Single-host pheme deploy — hostname argument is ignored |
 
 ---
@@ -22,16 +22,16 @@ title: Kraite — deploy
 
 | Phase | Action |
 |---|---|
-| 1. Cool down all | athena + 5 workers in parallel via `php artisan kraite:cooldown`; wait for `STATUS:COOLED_DOWN` |
+| 1. Cool down all | athena + 7 workers in parallel via `php artisan kraite:cooldown`; wait for `STATUS:COOLED_DOWN` |
 | 2. Determine tag | `git tag --sort=-v:refname | head -1` |
-| 3. Deploy code | All 6 boxes in parallel run `DEPLOY_TAG=v<version> bash deploy.sh`. Wait for `Deploy complete` everywhere |
-| 4. Warmup workers | eos + iris + nyx + hemera + tyche in parallel via [`kraite-warmup`](/docs/dynamic-commands/kraite-warmup) |
+| 3. Deploy code | All 8 boxes in parallel run `DEPLOY_TAG=v<version> bash deploy.sh`. Wait for `Deploy complete` everywhere |
+| 4. Warmup workers | eos + iris + nyx + hemera + palaemon + aristaeus + tyche in parallel via [`kraite-warmup`](/docs/dynamic-commands/kraite-warmup) |
 | 5. Warmup athena | athena last — resumes dispatch daemon, both WS streams, user-data Horizon supervisor, scheduler cron |
 
 The full-stop between phases is intentional. Either the whole fleet is on the OLD tag (before Phase 3) or the whole fleet is on the NEW tag (after Phase 3). No moment where athena dispatches new-code jobs to workers still on old code.
 
 {% callout title="Why workers warm before athena" %}
-With the current 8-box fleet, athena no longer holds a self-sufficiency footprint on positions / orders / priority queues — its only Horizon pool is `user-data-stream`. Workers MUST be the first consumers up. The instant `/etc/cron.d/kraite-scheduler` is restored on athena and the first cron tick fires, dispatched jobs flow straight to workers without piling up in Redis.
+With the current 10-box fleet, athena no longer holds a self-sufficiency footprint on positions / orders / priority queues — its only Horizon pool is `user-data-stream`. Workers MUST be the first consumers up. The instant `/etc/cron.d/kraite-scheduler` is restored on athena and the first cron tick fires, dispatched jobs flow straight to workers without piling up in Redis.
 
 **Historical note (incident 2026-05-24, v1.49.8 release):** the previous flow was athena-first, workers-second. Warming athena resumed the scheduler before workers were deployed, which filled the worker queue (1298 pending) and tripped `deploy.sh`'s `STATUS:COOLED_DOWN` hard gate on each worker. The release only completed via a sed-stripped `deploy-force.sh` that bypassed the cooldown check, plus the `FORCE_DEPLOY=1` env-var bypass added to `deploy.sh` afterwards. The flow above is the structural fix.
 {% /callout %}

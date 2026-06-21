@@ -2,7 +2,7 @@
 title: Kraite — health
 ---
 
-`kraite-health` is the **fleet-wide datagrid**. It always probes the full 8-server fleet in parallel and renders one table keyed by hostname. Server-scoped only — no website checks, no TLS cert checks, no maintenance-mode checks (those belong to a separate command). {% .lead %}
+`kraite-health` is the **fleet-wide datagrid**. It always probes the full 10-server fleet in parallel and renders one table keyed by hostname. Server-scoped only — no website checks, no TLS cert checks, no maintenance-mode checks (those belong to a separate command). {% .lead %}
 
 ---
 
@@ -27,7 +27,7 @@ If SSH times out, the row shows `UNREACHABLE` across all columns.
 
 ---
 
-## Fleet (rebuilt 2026-05-24 → nyx 2026-05-24 → hemera 2026-05-30 → pheme 2026-06-01)
+## Fleet (rebuilt 2026-05-24 → nyx 2026-05-24 → hemera 2026-05-30 → pheme 2026-06-01 → palaemon + aristaeus 2026-06-12)
 
 | Hostname | IP | Scope |
 |---|---|---|
@@ -38,6 +38,8 @@ If SSH times out, the row shows `UNREACHABLE` across all columns.
 | iris | 204.168.138.83 | worker (positions + orders) |
 | nyx | 204.168.129.189 | worker (positions + orders) |
 | hemera | 77.42.68.254 | worker (positions + orders) |
+| palaemon | 37.27.192.42 | worker (positions + orders) |
+| aristaeus | 37.27.196.99 | worker (positions + orders) |
 | tyche | 204.168.135.246 | worker (indicators + cronjobs) |
 
 ---

@@ -37,7 +37,7 @@ The daemon doesn't *know* about position semantics — it dispatches the block a
 - **Single-process execution** — no two scheduler ticks ever race on the same workload, eliminating the duplicate-block class of bugs that motivated the rewrite
 - **Step-level retry semantics** — failed atomics route through `resolve-exception` rather than crashing the daemon
 - **Orchestrator idempotency hooks** — `compute()` short-circuits on retry if any child step already exists in the block (the position-open flow uses this directly via `PreparePositionsOpeningJob`)
-- **Survives Horizon restarts** — daemon and Horizon are independent supervisors; restarting workers on eos / iris / nyx / hemera / tyche does not interrupt the dispatch loop on Athena
+- **Survives Horizon restarts** — daemon and Horizon are independent supervisors; restarting workers on eos / iris / nyx / hemera / palaemon / aristaeus / tyche does not interrupt the dispatch loop on Athena
 
 ---
 

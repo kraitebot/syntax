@@ -2,11 +2,11 @@
 title: Servers
 ---
 
-The **server lens** answers "where does this physically run?" Kraite's eight-box Hetzner topology is deliberately split: one stateful core for database and Redis, one ingestion brain, one dedicated web host, four interchangeable trading workers split by Binance per-IP weight, and one isolated worker for indicator throttling. Each box has a well-defined role; any one can be lost without dragging down the rest of the system. {% .lead %}
+The **server lens** answers "where does this physically run?" Kraite's ten-box Hetzner topology is deliberately split: one stateful core for database and Redis, one ingestion brain, one dedicated web host, six interchangeable trading workers split by Binance per-IP weight, and one isolated worker for indicator throttling. Each box has a well-defined role; any one can be lost without dragging down the rest of the system. {% .lead %}
 
 {% quick-links %}
 
-{% quick-link title="Architecture overview" icon="installation" href="/docs/servers/architecture-overview" description="The full eight-box topology. Topology diagram, role split, failure semantics for each box, and the cross-references into per-server chapters." /%}
+{% quick-link title="Architecture overview" icon="installation" href="/docs/servers/architecture-overview" description="The full ten-box topology. Topology diagram, role split, failure semantics for each box, and the cross-references into per-server chapters." /%}
 
 {% quick-link title="Hyperion (database + Redis)" icon="theming" href="/docs/servers/hyperion" description="The stateful core. MySQL 8.4.8 plus Redis 8.0.5 on a dedicated AMD-EPYC box. Tuned for the write-heavy step-dispatcher workload — 10 G buffer pool, 5000 IO capacity, non-blocking backups." /%}
 
@@ -14,7 +14,7 @@ The **server lens** answers "where does this physically run?" Kraite's eight-box
 
 {% quick-link title="Pheme (web)" icon="presets" href="/docs/servers/pheme" description="Dedicated web host — nginx + php8.5-fpm serving admin.kraite.com + console.kraite.com + kraite.com + syntax.kraite.com. No exchange API calls, no step-router consumer. Smallest non-trivial blast radius in the fleet." /%}
 
-{% quick-link title="Eos + Iris + Nyx + Hemera (workers)" icon="plugins" href="/docs/servers/eos-iris" description="Four interchangeable trading workers — Horizon consumers competing on the same positions / orders / priority queues. No per-account-to-box binding by design. Four distinct public IPs spread Binance API call load naturally across workers as dispatched jobs distribute." /%}
+{% quick-link title="Eos + Iris + Nyx + Hemera + Palaemon + Aristaeus (workers)" icon="plugins" href="/docs/servers/eos-iris" description="Six interchangeable trading workers — Horizon consumers competing on the same positions / orders / priority queues. No per-account-to-box binding by design. Six distinct public IPs spread Binance API call load naturally across workers as dispatched jobs distribute." /%}
 
 {% quick-link title="Tyche (indicators + cronjobs)" icon="lightbulb" href="/docs/servers/tyche" description="Isolated worker. Runs the 10-process indicator pool plus 3-process cronjobs pool. Kept off the trading boxes so TAAPI rate-limit waits never starve real-time position / order processing." /%}
 

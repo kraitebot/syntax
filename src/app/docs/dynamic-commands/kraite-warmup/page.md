@@ -11,7 +11,7 @@ title: Kraite — warmup
 | Usage | Behaviour |
 |---|---|
 | `/do kraite-warmup` | Warmup the current project's target (profile decides) |
-| `/do kraite-warmup <hostname>` (ingestion only) | Warm a single trading server. Hostname ∈ `athena`, `eos`, `iris`, `nyx`, `hemera`, `tyche` |
+| `/do kraite-warmup <hostname>` (ingestion only) | Warm a single trading server. Hostname ∈ `athena`, `eos`, `iris`, `nyx`, `hemera`, `palaemon`, `aristaeus`, `tyche` |
 
 ---
 
@@ -19,7 +19,7 @@ title: Kraite — warmup
 
 **Workers MUST be warmed before athena.** Inverts the pre-v1.49.8 rule. Reason: athena's warmup re-enables `/etc/cron.d/kraite-scheduler`, which immediately starts dispatching jobs to Redis on hyperion. If workers are still in maintenance at that moment, queue depth grows but isn't drained, and `kraite:cooldown --status` on any worker subsequently returns `STATUS:ACTIVE` — which `deploy.sh`'s cooldown gate hard-blocks.
 
-Before warming athena, the command verifies all five workers (eos, iris, nyx, hemera, tyche) are already `UP`. Any one `DOWN` → STOP and report.
+Before warming athena, the command verifies all seven workers (eos, iris, nyx, hemera, palaemon, aristaeus, tyche) are already `UP`. Any one `DOWN` → STOP and report.
 
 ---
 
