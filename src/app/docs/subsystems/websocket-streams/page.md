@@ -89,6 +89,20 @@ Retrying forever keeps a daemon *alive* but does not guarantee it *recovers*. On
 The mark-price stream is *strict-data* — ~1 Hz frames are always expected. If no real price frame arrives for **5 minutes**, the daemon stops its loop so supervisor respawns a clean process, turning a multi-hour blackout into a ~10-second blip. It tracks time-since-last-*data*-frame separately from time-since-last-anything (a reconnect or a keepalive ping never resets it), so both failure shapes trip it: never-reconnects **and** connects-but-silent. The user-data stream is exempt — silence there is normal on a quiet account, so it never self-exits. A frozen mark price is what surfaces the operator-facing "Mark price stale" alert for any symbol the bot has skin in (open position or tradeable).
 {% /callout %}
 
+### One process, N accounts — bounding the restart blast radius
+
+The user-data daemon multiplexes one WebSocket per account inside a single process, so **any restart resets every account at once**. Harmless at one account; a storm at a hundred. Three amplifiers are bounded so a restart stays quiet at fleet scale:
+
+| Amplifier | Before | After |
+|---|---|---|
+| Notifications | one "connected" alert per account per (re)connect → 100 per restart | one boot-summary per restart; per-account connect is log-only; only connect **failures** page |
+| Reconnect burst | all N handshakes in the same tick — a thundering herd from athena's single IP, risking Binance's per-IP connection limit | connects staggered on a ~4/sec ramp (100 accounts over ~25s) |
+| Memory self-exit | fixed 512 MB ceiling, crossed by normal load around ~43 accounts → the daemon crash-loops, resetting everyone | ceiling scales with the live account count (≈200 MB base + 25 MB/account) so it fires only on a real leak |
+
+{% callout title="Design rule" %}
+A single-process multiplexed daemon must treat "restart = N resets" as a design constraint from day one — bound the blast radius (summary notifications, staggered reconnect, scale-aware limits) *before* the account count grows. A fixed resource ceiling on a per-account-scaling daemon is a latent crash-loop. A future step is to shard the daemon into several processes of fewer accounts each, so one restart only resets a shard.
+{% /callout %}
+
 ---
 
 ## Cross-lens links
