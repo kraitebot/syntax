@@ -81,6 +81,14 @@ Replication across exchanges uses `(token + quote)` matching with `token_mappers
 Both daemons share a `BaseWebsocketClient` abstract: auto-pong, exponential-backoff reconnect (`2^attempt`, max 5), per-account error isolation. A single account's listenKey expiry, transient WS error, or malformed frame does not bring down the daemon or the other accounts' streams. This makes the user-data stream the *first* layer of fault containment, not the last.
 {% /callout %}
 
+### Reconnect-forever is availability, not recovery
+
+Retrying forever keeps a daemon *alive* but does not guarantee it *recovers*. On 2026-07-02 a transient network blip wedged the mark-price daemon's DNS resolver inside its ReactPHP event loop; it reconnected ~46,000 times over four hours, every attempt failing, no prices landing — until a manual restart cleared it in seconds. A fresh connector per attempt does not clear a loop-level wedge; only a fresh **process** does.
+
+{% callout type="warning" title="Sustained no-data self-exit" %}
+The mark-price stream is *strict-data* — ~1 Hz frames are always expected. If no real price frame arrives for **5 minutes**, the daemon stops its loop so supervisor respawns a clean process, turning a multi-hour blackout into a ~10-second blip. It tracks time-since-last-*data*-frame separately from time-since-last-anything (a reconnect or a keepalive ping never resets it), so both failure shapes trip it: never-reconnects **and** connects-but-silent. The user-data stream is exempt — silence there is normal on a quiet account, so it never self-exits. A frozen mark price is what surfaces the operator-facing "Mark price stale" alert for any symbol the bot has skin in (open position or tradeable).
+{% /callout %}
+
 ---
 
 ## Cross-lens links
