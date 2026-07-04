@@ -58,6 +58,18 @@ Every cron-bound command in Kraite extends a base class that wraps execution wit
 
 ---
 
+## Maintenance mode silences everything — and its sentinel
+
+The scheduler skips every event while the application is in maintenance mode. That is by design during a deploy (cooldown parks each box in maintenance; warmup lifts it) — but it means a box accidentally *left* in maintenance loses its entire cron table silently: listenKey keepalive, sync fallback, database backups, and every watchdog, all at once, while supervisors and Horizon still look healthy.
+
+{% callout type="warning" title="Incident — 2026-07-02" %}
+An interrupted release warmup left Athena in maintenance mode for 53 hours. The only external symptom was Binance's own `listenKeyExpired` push every 70 minutes — the keepalive cron that would have prevented it was itself paused, and so was the health watchdog that should have paged. Zero money impact (no open positions), but database backups were silently dead for two days.
+{% /callout %}
+
+Since then, the health watchdog (`kraite:cron-check-system-health`) is the one scheduled command that runs **even in maintenance mode**. While the box is down it performs a single check — "has this box been in maintenance longer than the threshold" (default 45 minutes, sized above a full cooldown → deploy → warmup span) — and pages CRITICAL on breach, re-paging every 30 minutes until an operator brings the box up. The full check pass stays skipped during maintenance, so normal deploy windows never produce transient alerts. The release runbooks carry the matching gates: warmup hard-verifies the box answers "UP" after warming, and the fleet health grid renders a **Maint** column that fails on any leftover maintenance marker.
+
+---
+
 ## Why a daemon replaced `steps:dispatch`
 
 {% callout title="Architectural decision" %}
