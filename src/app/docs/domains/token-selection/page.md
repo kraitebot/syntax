@@ -74,6 +74,32 @@ Fallback mode skips this — it accepts wrong-sign-correlation candidates becaus
 
 ---
 
+## Who's in the candidate pool at all — the backtest approval gate
+
+Everything above ranks symbols that are *already eligible*. Eligibility
+itself is operator-curated: a symbol enters the tradeable pool only
+after its historical backtest is reviewed and **approved** in the admin
+backtesting console (`/system/backtesting`), which persists the tested
+TP / SL / gap parameters and flips the approval + enablement flags the
+live trader's tradeable scope requires. Rejected or unreviewed symbols
+never reach this chapter's scoring, however good their correlation
+looks.
+
+The approval proposal is stop-loss-count driven with an absolute rule:
+fewer than 5 stops → approve, 5–10 → adjust, more than 10 → reject.
+
+{% callout title="Grade can't contradict the decision rule (core v1.61.0)" %}
+The letter grade weighs stops as a percentage of resolved sims, so a
+large sample diluted absolute failures — 16 stop-loss hits over ~1400
+sims still graded "B — mostly fine to run" while the proposal banner
+directly below said "recommend reject". The grade is now capped by the
+decision band: more than 10 stops grades at best D, 5–10 at best C.
+The score formula below the cap is unchanged — only the contradiction
+is gone.
+{% /callout %}
+
+---
+
 ## Cross-lens links
 
 - **[Signal → direction](/docs/lifecycles/signal-direction)** — decides the direction this layer ranks within
