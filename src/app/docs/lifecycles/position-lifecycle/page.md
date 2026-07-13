@@ -179,6 +179,19 @@ The observer's `reference_status` ack was moved to **after** the dedup check. Pr
 
 Additionally, `CalculateWap::complete()` now scans for LIMIT orders with `status=FILLED` but `reference_status != FILLED` and self-dispatches a follow-up `ApplyWapJob` (3 s delay so the current step's Completed transition has settled). Covers the window where L2 fills while L1's WAP is running.
 
+### Decision: stuck-WAP self-heal, drift spotter Scope 2b (2026-07-14)
+
+{% callout type="warning" title="Incident — position #394 FILUSDT, 2026-07-13" %}
+Binance omits `avgPrice` on modify responses for never-filled orders. The unguarded read crashed the TP resize AFTER Binance had already accepted it; the failed step never committed `was_waped` or the reference values, so the order observer treated the exchange-side change as unexplained and dispatched a correction that reverted the resize. Net: exchange position 141.9, TP covering 47.3 — permanently, because failed steps never retry and the triggering fill was already acked. No alarm fired: the drift spotter's quiet-window filter never inspects busy positions, the WAP pushover fires at chain end (never reached), and 4 failed steps sit far below the 25-in-20-min storm threshold.
+{% /callout %}
+
+Two-layer fix. The crash class is closed at the source: every Binance order-response mapper (cancel, modify, query) now tolerates a missing `avgPrice`. And a self-heal safety net catches any future variant of a lost WAP:
+
+- Every 5 minutes, the drift spotter audits each **`active`** position DB-only: summed FILLED entry ladder (MARKET + DCA LIMITs, at the symbol's quantity precision) vs the resting NEW take-profit quantity.
+- Under-coverage with at least one FILLED DCA LIMIT → re-dispatch `ApplyWapJob` with the observer's exact dedupe (position row lock; skip when a WAP step is pending/dispatched/running; **terminal Failed steps do not block — they are the wound**).
+- Mid-flight statuses (`syncing` / `waping` / `closing` …) are skipped — a workflow owns the row. No quiet window (that gate is what blinded Scope 1 to FILUSDT). The heal runs even while the bot is cooled: existing positions keep trading and must stay protected.
+- One `position_wap_self_healed` pushover per heal; re-fires every 5 minutes while under-coverage persists — a repeating ping means the heal chain itself is failing. Kill switch: `--skip-wap-heal`.
+
 ---
 
 ## Close
