@@ -11,7 +11,7 @@ The end-to-end journey of a Kraite position: slot assignment → open → sync �
 | Phase | Trigger | Outcome | Status transitions |
 |---|---|---|---|
 | **Open** | `kraite:cron-create-positions` (every 3 minutes) | Position activated on exchange with market entry, DCA limits, TP, SL | `new → opening → active` |
-| **Sync** | WebSocket user-data event (primary) or 15-min poll (fallback) | DB orders mirror exchange state | `active` (transient `syncing`) |
+| **Sync** | WebSocket user-data event (primary) or 5-min poll (fallback) | DB orders mirror exchange state | `active` (transient `syncing`) |
 | **WAP** | DCA LIMIT fills | TP price recalculated against new weighted average entry | `active → waping → active` |
 | **Close** | TP or SL fills | Remaining orders cancelled, residual closed, position finalized | `active → closing → closed` |
 
@@ -112,8 +112,8 @@ Re-enabling is an explicit operator action — the hourly `kraite:disable-volati
 
 ### Guards against duplicate open
 
-- **DB unique constraint** `ux_positions_open_slot` — virtual `is_open` column is `1` for non-terminal statuses (`new`, `opening`, `active`, `syncing`, `closing`, `cancelling`) and `NULL` otherwise. Unique index on `(account_id, exchange_symbol_id, direction, is_open)` rejects any second non-terminal position with the same tuple. NULL rows (closed / cancelled / failed) never collide.
-- **Orchestrator idempotency** — `PreparePositionsOpeningJob::compute()` is a no-op on retry if any child step already exists in its block.
+- **DB unique constraint** `ux_positions_open_slot` — virtual `is_open` column is `1` for non-terminal statuses (`new`, `opening`, `active`, `syncing`, `waping`, `closing`, `cancelling`) and `NULL` otherwise. Unique index on `(account_id, exchange_symbol_id, direction, is_open)` rejects any second non-terminal position with the same tuple. NULL rows (closed / cancelled / failed) never collide.
+- **Orchestrator idempotency** — child-block election and child creation commit atomically under a lock on the parent. A retry after commit sees the populated block and no-ops; a mid-build failure leaves no partial chain.
 
 ### Limit ladder math
 
@@ -135,7 +135,7 @@ Direction flips the sign: LONG puts limits below entry (BUY further down); SHORT
 As of 2026-04-30, sync runs in two layers:
 
 1. **Primary (push)** — `kraite:stream-binance-user-data` supervised daemon receives order/account events in real time over Binance's private WebSocket and updates `Order` rows directly. Reaction path for partial fills, full fills, cancellations, expirations, replacements.
-2. **Fallback (polling)** — `kraite:cron-sync-orders` runs every 15 minutes as a 100 % reconciliation safety net. Reduced from every-minute on 2026-04-30 once the push path became authoritative.
+2. **Fallback (polling)** — `kraite:cron-sync-orders` runs every 5 minutes as a 100 % reconciliation safety net.
 
 ### Observer-driven side effects
 
@@ -268,7 +268,7 @@ Canonicals dispatched during the lifecycle, each cache-throttled per position to
 | Capability | State |
 |---|---|
 | Open (create-positions) | scheduled every 3 minutes |
-| Sync (reconciliation) | push primary + 15-min poll fallback |
+| Sync (reconciliation) | push primary + 5-min poll fallback |
 | WAP (TP adjustment on DCA fill) | observer-driven, autonomous |
 | Close (TP/SL fill detection) | observer-driven, autonomous |
 

@@ -13,7 +13,7 @@ This is the **subsystem lens** view. For the persistent process that replaced on
 | Command | Cadence | Cooldown-gated | Purpose |
 |---|---|---|---|
 | `steps:recover-stale` | 1 min | no | Flip stuck Running steps back to Pending after `timeout + 60s` |
-| `kraite:cron-sync-orders` | 5 min | no | Polling fallback for the user-data WS daemon |
+| `kraite:cron-sync-orders` | 5 min | yes | Polling fallback for the user-data WS daemon |
 | `kraite:cron-refresh-binance-listen-keys` | 1 min | no | Keep Binance listenKeys alive past 60-min auto-expiry |
 | `kraite:cron-create-positions` | 3 min | yes | Open new positions |
 | `kraite:cron-fetch-klines --only-active-positions` | 5 min | yes | Refresh klines for tokens with open positions |
@@ -29,6 +29,11 @@ This is the **subsystem lens** view. For the persistent process that replaced on
 | `kraite:purge-candles` | daily 03:00 | yes | Retention sweep on candle data |
 | `kraite:purge-model-logs --duration=30` | daily 03:30 | yes | 30-day rolling audit-log window |
 | `steps:archive --duration=1` | daily 04:00 | yes | Archive completed step rows past 1 day |
+
+The hourly direction-conclusion command also owns an application lock,
+so a manual run and the scheduled run cannot overlap. Its destructive
+`--clean` mode is accepted only in local or testing; production refuses
+the flag before deleting any indicator or direction data.
 
 ---
 

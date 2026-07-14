@@ -72,6 +72,14 @@ HORIZON_PREFIX = kraite_athena_horizon:        (per-host Redis key namespace)
 
 Mixing these up is the most common cause of a "Horizon is up but no jobs are processing" report — usually `HORIZON_ENV` got left at a previous server's value during a hostname migration.
 
+### Queue-depth health uses physical names
+
+The health watchdog measures the `{hostname}-{logical}` Redis queues
+that workers actually consume, then sums them back into each logical
+lane. It does not read orphan logical keys such as `queues:positions`.
+Thresholds stay lane-specific: positions and orders alert earliest,
+while indicators has enough headroom for its normal hourly burst.
+
 ---
 
 ## What Horizon doesn't own

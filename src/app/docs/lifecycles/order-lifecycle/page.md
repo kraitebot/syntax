@@ -76,7 +76,9 @@ Three observer arms, three downstream block dispatches. Each block is itself a s
 
 ## The cancel / expire path
 
-`CANCELED` / `EXPIRED` arrive via the same WS push (or the 5-min polling safety net). The observer routes them to `PrepareOrderCorrectionJob` if the order was load-bearing (TP / SL on an active position), or noops if it was a benign rung-cancel during a position close.
+`CANCELED` / `EXPIRED` arrive via the same WS push (or the 5-min polling safety net). On an active position, a DCA LIMIT, TP, or SL routes to `PreparePositionReplacementJob`, which verifies the position still exists and rebuilds the missing order set. Concurrent cancellations share one live replacement workflow, so several exchange events cannot create duplicate rungs.
+
+An active order whose price or quantity differs from its stored reference follows the separate `PrepareOrderCorrectionJob` path. That workflow restores intent and is deduplicated per order, including the exchange-specific Bitget correction class.
 
 A specific high-frequency case: **manual close detection.** When a reduce-only FILL arrives for an order Kraite *doesn't own* against a position Kraite *does* own, the daemon dispatches `PreparePositionReplacementJob` immediately — not waiting for the polling sync to catch the EXPIRED legs of the kraite-owned TP / SL.
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.3] — 2026-07-14
+
+### Operational behavior refresh
+
+- [IMPROVED] Position, order, token-selection, scheduler, and Horizon chapters now document atomic child-chain ownership, `waping` open-slot semantics, delisted active-exposure handling, correction/replacement flows, cooldown scheduling, command safety, and physical per-worker queue monitoring.
+
 ## [0.3.1] — 2026-06-05
 
 ### Chapter refresh — pheme / tyche / horizon-queues

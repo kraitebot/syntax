@@ -105,6 +105,11 @@ are selected by their position/order state and remain covered by sync,
 WAP, protection, and close workflows even if their symbol later leaves
 the candidate pool.
 
+That distinction also applies to operational price comparison. A
+delisted Binance sibling is invalid evidence for selecting a new token,
+but it may still be used to monitor an already-open same-asset position.
+Delisting never switches off the duties attached to existing exposure.
+
 {% callout title="Grade can't contradict the decision rule (core v1.61.0)" %}
 The letter grade weighs stops as a percentage of resolved sims, so a
 large sample diluted absolute failures — 16 stop-loss hits over ~1400

@@ -23,7 +23,7 @@ This is the **business-domain lens** view. For the step-by-step flow that drives
 | `cancelled` | Failure cleanup completed and no exchange residual remains | `cancelling` | Final verified cancel step |
 | `failed` | Cleanup could not prove a safe terminal state (or terminal exchange error like Binance `-2022`) | `cancelling`, `closing` (on `-2022`) | Side-effects: notification + auto-block of symbol |
 
-Statuses `new`, `opening`, `active`, `syncing`, `closing`, `cancelling` are **non-terminal** (treated as "open" for the duplicate-open guard). `closed`, `cancelled`, `failed` are terminal.
+Statuses `new`, `opening`, `active`, `syncing`, `waping`, `closing`, `cancelling` are **non-terminal** (treated as "open" for the duplicate-open guard). `closed`, `cancelled`, `failed` are terminal.
 
 ---
 
@@ -32,7 +32,7 @@ Statuses `new`, `opening`, `active`, `syncing`, `closing`, `cancelling` are **no
 Only one **non-terminal** position can exist for the same `(account_id, exchange_symbol_id, direction)` tuple. Enforced two ways:
 
 1. **DB-level** — virtual `is_open` column is `1` for non-terminal statuses and `NULL` otherwise. Unique index `ux_positions_open_slot` on `(account_id, exchange_symbol_id, direction, is_open)` rejects any second non-terminal row. NULL rows (closed / cancelled / failed) never collide so the constraint plays nicely with re-trades on the same symbol.
-2. **Orchestrator-level** — `PreparePositionsOpeningJob::compute()` is a no-op on retry if any child step already exists in its block.
+2. **Orchestrator-level** — parent election and child creation commit together under a parent-row lock. A retry sees the populated child block and becomes a no-op instead of appending another opening chain.
 
 Both layers are intentional — the DB constraint is the last line of defence; the orchestrator guard prevents the cascade-then-fail-on-DB-violation pattern.
 
