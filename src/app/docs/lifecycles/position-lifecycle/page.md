@@ -71,9 +71,10 @@ zero orders and zero exchange exposure. Cleanup then tried to sync an
 empty order set and treated "nothing exists to sync" as a failure,
 which incorrectly disabled ETC and paged the operator.
 
-An empty sync now skips normally. The cancel workflow continues through
-its residual verification and ends `cancelled`. Existing orders that
-all fail to sync remain a real failure and still retry/alert.
+An empty sync skips only after the workflow has entered `cancelling`.
+The cancel workflow continues through residual verification and ends
+`cancelled`. Active/opening positions without syncable protection still
+fail loud, as do existing orders that all fail to sync.
 {% /callout %}
 
 ### Decision: retry idempotency on order placements
@@ -158,10 +159,11 @@ Bybit and KuCoin return `status='NOT_FOUND'` when an order is no longer on the a
 
 ### Decision: empty sync skips, existing-order failure retries
 
-Order synchronization distinguishes "no exchange-backed order exists"
-from "orders exist but every exchange query failed". The former is a
-normal no-op, including pre-entry cleanup. The latter remains a failed
-attempt so the retry and alerting machinery stays active.
+Order synchronization distinguishes an empty `cancelling` cleanup from
+missing protection during normal position management. Only the former
+is a no-op. Active/opening positions with no syncable orders and syncs
+where every exchange query fails remain failed attempts, keeping retry
+and alerting active.
 
 ---
 
