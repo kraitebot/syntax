@@ -20,7 +20,8 @@ This is the **business-domain lens** view. For the step-by-step flow that drives
 | `closing` | Close block running | `active` | TP or SL reached FILLED |
 | `closed` | Closed cleanly | `closing` | `UpdatePositionStatus` final step |
 | `cancelling` | Cancel workflow running (failure path) | any open status | `CancelPositionJob` |
-| `failed` | Cancel workflow finished (or terminal exchange error like Binance `-2022`) | `cancelling`, `closing` (on `-2022`) | side-effects: notification + auto-block of symbol |
+| `cancelled` | Failure cleanup completed and no exchange residual remains | `cancelling` | Final verified cancel step |
+| `failed` | Cleanup could not prove a safe terminal state (or terminal exchange error like Binance `-2022`) | `cancelling`, `closing` (on `-2022`) | Side-effects: notification + auto-block of symbol |
 
 Statuses `new`, `opening`, `active`, `syncing`, `closing`, `cancelling` are **non-terminal** (treated as "open" for the duplicate-open guard). `closed`, `cancelled`, `failed` are terminal.
 
@@ -60,7 +61,11 @@ Priorities 2 and 3 also apply the [S/R proximity gate](/docs/domains/token-selec
 
 ## Failure semantics
 
-A failure during `opening` triggers the cancel workflow → `status='failed'` → two side effects ([decision detail](/docs/lifecycles/position-lifecycle#decision-failure-side-effects-2026-04-23)):
+An opening failure triggers the cancel workflow. When cleanup verifies
+that no exchange exposure or open orders remain, the position ends
+`cancelled` with no failure alert and no symbol block. Only cleanup that
+cannot prove a safe terminal state ends `failed`, which triggers two
+side effects ([decision detail](/docs/lifecycles/position-lifecycle#decision-failed-cleanup-side-effects-2026-04-23)):
 
 - `position_opening_failed` Pushover notification fires (priority high)
 - `exchange_symbol.is_manually_enabled` flips to `false` so the next selection tick won't re-pick the same broken symbol

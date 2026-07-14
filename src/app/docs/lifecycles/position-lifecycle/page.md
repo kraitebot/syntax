@@ -15,7 +15,9 @@ The end-to-end journey of a Kraite position: slot assignment → open → sync �
 | **WAP** | DCA LIMIT fills | TP price recalculated against new weighted average entry | `active → waping → active` |
 | **Close** | TP or SL fills | Remaining orders cancelled, residual closed, position finalized | `active → closing → closed` |
 
-Failure at any phase routes the position into the cancel workflow (`status='failed'`).
+Failure at any phase routes the position into the cancel workflow. A
+verified cleanup finishes as `cancelled`; only a cleanup that cannot
+prove the exchange is clear finishes as `failed`.
 
 ---
 
@@ -60,6 +62,20 @@ The ladder min-notional check used to fire AFTER the market had already placed o
 
 `VerifyOrderNotionalForMarketOrderJob` now runs the full ladder simulation (same `HasOrderCalculations::calculateLimitOrdersData` calculator, with freshly-fetched mark price and projected market quantity) **before** the market places. An infeasible ladder aborts the workflow with no exchange-side state to unwind.
 
+### Decision: an empty pre-entry cleanup is not a failure (2026-07-14)
+
+{% callout type="warning" title="Incident — position #763 ETCUSDT" %}
+The projected ETC market slice was 17.4346 USDT against a 20 USDT
+minimum. The notional gate correctly stopped before market placement:
+zero orders and zero exchange exposure. Cleanup then tried to sync an
+empty order set and treated "nothing exists to sync" as a failure,
+which incorrectly disabled ETC and paged the operator.
+
+An empty sync now skips normally. The cancel workflow continues through
+its residual verification and ends `cancelled`. Existing orders that
+all fail to sync remain a real failure and still retry/alert.
+{% /callout %}
+
 ### Decision: retry idempotency on order placements
 
 `PlaceMarketOrderJob` always resumed from a pre-existing `exchange_order_id` rather than abandoning the retry. Before 2026-04-23 PM, `PlaceLimitOrderJob` did NOT — a retry triggered by recover-stale, a transient `doubleCheck` blip, or a worker restart would bail with "already placed" semantics and cascade to the cancel workflow. LAB #107 burned on this exactly.
@@ -80,9 +96,11 @@ When `PlaceStopLossOrderJob` failed mid-flight (e.g. on the `-4509` class before
 
 Both the select query and the pre-update query now filter `whereNotNull('exchange_order_id')`. Ghosts are silently skipped — there's nothing on the exchange to cancel. The real upstream error stays in the step log as the primary failure cause.
 
-### Decision: failure side-effects (2026-04-23)
+### Decision: failed-cleanup side-effects (2026-04-23)
 
-On the transition into `status='failed'` (guarded so retries can't double-fire), two side effects run in tandem:
+On the transition into `status='failed'` (guarded so retries can't
+double-fire), two side effects run in tandem. A clean `cancelled`
+transition does neither:
 
 - `position_opening_failed` Pushover notification (priority high) fires to the position's user with token / pair / direction / reason / and whether the symbol was auto-blocked.
 - `exchange_symbol.is_manually_enabled` flips to `false` if it wasn't already, so the opening scheduler stops selecting the same broken token next tick.
@@ -137,6 +155,13 @@ All four `apiSync*` paths (default / algo / stop-order / plan-order) now route i
 ### Decision: NOT_FOUND handling (2026-04-21)
 
 Bybit and KuCoin return `status='NOT_FOUND'` when an order is no longer on the active-orders list (typically because it filled or cancelled and moved to history). Previously the literal string was written to `orders.status`, leaving the order in permanent limbo since the observer has no mapping for it. Now skipped with a warning log.
+
+### Decision: empty sync skips, existing-order failure retries
+
+Order synchronization distinguishes "no exchange-backed order exists"
+from "orders exist but every exchange query failed". The former is a
+normal no-op, including pre-entry cleanup. The latter remains a failed
+attempt so the retry and alerting machinery stays active.
 
 ---
 

@@ -24,6 +24,8 @@ This is the **subsystem lens** view. For the persistent process that replaced on
 | `kraite:cron-refresh-exchange-symbols` | hourly :15 | yes | Per-symbol leverage-bracket fan-out |
 | `kraite:cron-conclude-symbols-direction` | hourly :30 | yes | TAAPI indicator → direction |
 | `kraite:disable-volatile-tokens` | hourly :45 | yes | Sweep volatile / structurally-brittle tokens |
+| `backup:run --only-db` | every 3h :07 | no | Encrypted database snapshot to B2; two whole-command attempts |
+| `backup:monitor` | every 6h :15 | no | Alert on stale/unhealthy B2 backups |
 | `kraite:purge-candles` | daily 03:00 | yes | Retention sweep on candle data |
 | `kraite:purge-model-logs --duration=30` | daily 03:30 | yes | 30-day rolling audit-log window |
 | `steps:archive --duration=1` | daily 04:00 | yes | Archive completed step rows past 1 day |

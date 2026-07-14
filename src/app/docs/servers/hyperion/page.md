@@ -62,7 +62,17 @@ The dangerous commands `FLUSHALL`, `FLUSHDB`, `KEYS`, and `DEBUG` have been rena
 
 ## Backups
 
-Backups are taken by the application layer (running on athena via `spatie/laravel-backup`) using **non-blocking** mysqldump options — no global write lock, no impact on writers during the backup window. Backups land on Backblaze B2 with a tiered GFS retention strategy (daily / weekly / monthly / yearly).
+Backups are taken by the application layer on Athena via
+`spatie/laravel-backup`, using non-blocking mysqldump options: no global
+write lock and no impact on writers during the snapshot. An encrypted
+database-only archive is uploaded to Backblaze B2 every three hours at
+minute 07; successful cleanup retains the latest three snapshots.
+
+The upload has two retry layers: ten adaptive S3 request/multipart
+attempts, then two total whole-backup attempts with a 60-second delay.
+The whole-command layer was added after B2 returned a transient
+`InternalError` on one multipart part on 2026-07-14 even though the
+database dump and archive were healthy.
 
 The **migration-ownership rule** (documented in the operator runbook): only `ingestion.kraite.com` runs migrations against Hyperion. Admin and the public site read this schema; they never alter it.
 

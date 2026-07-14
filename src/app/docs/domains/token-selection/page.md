@@ -88,6 +88,23 @@ looks.
 The approval proposal is stop-loss-count driven with an absolute rule:
 fewer than 5 stops → approve, 5–10 → adjust, more than 10 → reject.
 
+### Active Binance reference gate
+
+Non-Binance ticker aliases are price-checked only against an active,
+non-delisted Binance same-asset reference. If the only Binance sibling
+is delisted or marked for delisting, the comparison skips and leaves
+the target symbol unchanged. A retired ticker is not live evidence.
+
+DATAUSDT exposed this on 2026-07-14: DATA is the 1:1 successor to IP,
+while the only Binance same-asset row was delisted IPUSDT. The stale
+reference produced recurring threshold alerts even though the mapping
+was valid.
+
+This is strictly a **new-opening eligibility** rule. Existing positions
+are selected by their position/order state and remain covered by sync,
+WAP, protection, and close workflows even if their symbol later leaves
+the candidate pool.
+
 {% callout title="Grade can't contradict the decision rule (core v1.61.0)" %}
 The letter grade weighs stops as a percentage of resolved sims, so a
 large sample diluted absolute failures — 16 stop-loss hits over ~1400
