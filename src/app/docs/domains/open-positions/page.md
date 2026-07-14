@@ -29,12 +29,14 @@ Statuses `new`, `opening`, `active`, `syncing`, `waping`, `closing`, `cancelling
 
 ## Duplicate-open invariant
 
-Only one **non-terminal** position can exist for the same `(account_id, exchange_symbol_id, direction)` tuple. Enforced two ways:
+The product allows only one bot-owned position per account and trading pair, regardless of direction. Hedge mode can represent LONG and SHORT together at the exchange, but Kraite deliberately does not assign that shape. Enforcement is layered:
 
-1. **DB-level** — virtual `is_open` column is `1` for non-terminal statuses and `NULL` otherwise. Unique index `ux_positions_open_slot` on `(account_id, exchange_symbol_id, direction, is_open)` rejects any second non-terminal row. NULL rows (closed / cancelled / failed) never collide so the constraint plays nicely with re-trades on the same symbol.
-2. **Orchestrator-level** — parent election and child creation commit together under a parent-row lock. A retry sees the populated child block and becomes a no-op instead of appending another opening chain.
+1. **Selection-level** — locally-open positions, exchange position snapshots, exchange open-order snapshots, and symbols already selected in the current batch are removed before either LONG or SHORT assignment.
+2. **Pre-entry exchange check** — `VerifyTradingPairNotOpenJob` blocks the pair when any `LONG`, `SHORT`, or one-way `BOTH` position key exists, independent of the requested slot direction.
+3. **DB-level** — virtual `is_open` is `1` for non-terminal statuses and `NULL` otherwise. Unique index `ux_positions_open_slot` rejects a second non-terminal row with the same `(account_id, exchange_symbol_id, direction)` tuple. This remains a final direction-aware storage guard beneath the stronger pair-level product rule.
+4. **Orchestrator-level** — parent election and child creation commit together under a parent-row lock. A retry sees the populated child block and becomes a no-op instead of appending another opening chain.
 
-Both layers are intentional — the DB constraint is the last line of defence; the orchestrator guard prevents the cascade-then-fail-on-DB-violation pattern.
+All layers are intentional: selection prevents bad intent, the exchange check catches stale local state, the DB rejects duplicate storage, and orchestration prevents retry duplication.
 
 ---
 

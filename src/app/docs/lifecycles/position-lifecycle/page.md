@@ -113,6 +113,8 @@ Re-enabling is an explicit operator action — the hourly `kraite:disable-volati
 ### Guards against duplicate open
 
 - **DB unique constraint** `ux_positions_open_slot` — virtual `is_open` column is `1` for non-terminal statuses (`new`, `opening`, `active`, `syncing`, `waping`, `closing`, `cancelling`) and `NULL` otherwise. Unique index on `(account_id, exchange_symbol_id, direction, is_open)` rejects any second non-terminal position with the same tuple. NULL rows (closed / cancelled / failed) never collide.
+- **Pair-level selection guard** — token discovery excludes any trading pair already represented by a locally-open position or by the exchange position/open-order snapshots. This applies across LONG and SHORT; Kraite does not open both directions on one symbol even when the account is in hedge mode.
+- **Pre-entry exchange guard** — `VerifyTradingPairNotOpenJob` repeats the pair-only check immediately before placement. `PAIR:LONG`, `PAIR:SHORT`, and one-way `PAIR:BOTH` all block either slot direction.
 - **Orchestrator idempotency** — child-block election and child creation commit atomically under a lock on the parent. A retry after commit sees the populated block and no-ops; a mid-build failure leaves no partial chain.
 
 ### Limit ladder math
@@ -136,6 +138,8 @@ As of 2026-04-30, sync runs in two layers:
 
 1. **Primary (push)** — `kraite:stream-binance-user-data` supervised daemon receives order/account events in real time over Binance's private WebSocket and updates `Order` rows directly. Reaction path for partial fills, full fills, cancellations, expirations, replacements.
 2. **Fallback (polling)** — `kraite:cron-sync-orders` runs every 5 minutes as a 100 % reconciliation safety net.
+
+A manual close has an additional push-side guard. A zero-quantity account update starts `CancelPositionOpenOrdersJob` independently on the priority queue, removing only the position's live DCA LIMIT orders while `PreparePositionReplacementJob` continues the normal flat-versus-residual decision. This separation removes immediate re-entry risk without replacing lifecycle ownership.
 
 ### Observer-driven side effects
 

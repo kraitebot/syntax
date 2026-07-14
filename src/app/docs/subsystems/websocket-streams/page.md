@@ -41,8 +41,10 @@ Push delivers each event in <100 ms with zero per-frame budget consumed against 
                                      ▼
                           ProcessUserDataEventJob
                           → api_data_stream (raw)
-                          → Order::updateSaving
-                          → OrderObserver workflow
+                          ├─ order update → Order::updateSaving
+                          │                 → OrderObserver workflow
+                          └─ flat account update
+                             → CancelPositionOpenOrdersJob (priority)
 ```
 
 A 5-minute polling cron (`kraite:cron-sync-orders`) still runs as a **safety net** — catches missed frames in the rare WS-frame-loss / reconnect-race case.
@@ -52,6 +54,18 @@ A 5-minute polling cron (`kraite:cron-sync-orders`) still runs as a **safety net
 Not every WS frame triggers a downstream workflow. The execution-type allowlist is gated by `kraite.user_data_stream.<exchange>.dispatched_executions`. Empty list = pure shadow mode (every frame audited into `api_data_stream`, no `Order::updateSaving`). Each execution type is enabled via config flip after its OrderObserver workflow has been verified end-to-end against live frames.
 
 Production allowlist (Binance, since 2026-05-03): `TRADE` / `AMENDMENT` / `CANCELED` / `EXPIRED` / `ALGO_NEW` / `ALGO_CANCELED` / `ALGO_EXPIRED` / `ALGO_FILLED`. `NEW` / `REJECTED` / `CALCULATED` deliberately stay off — `NEW` would create defensive drift-detection noise on every placement ack, `REJECTED` is already caught synchronously at placement time, liquidations are out of scope.
+
+### Manual-flat safety branch
+
+An account-position update does not enter the order execution-type allowlist. It has one narrow independent action: when Binance reports quantity zero for a locally-open position, `ProcessUserDataEventJob` creates a high-priority `CancelPositionOpenOrdersJob` root for that position's remaining DCA LIMIT orders.
+
+The branch matches `LONG` and `SHORT` explicitly in hedge mode. A one-way `BOTH` row matches only when there is one locally-open position for the account and symbol. Non-zero updates, unrelated symbols, ambiguous local matches, and positions without a live LIMIT are passive. Replayed frames deduplicate against the live emergency cancellation.
+
+{% callout type="warning" title="Why this is separate from replacement" %}
+The reduce-only order fill still starts `PreparePositionReplacementJob`, which queries the exchange and owns final close-versus-replace reconciliation. The flat account update does not bypass that workflow. It removes only the immediate exposure risk: an opening LIMIT must not remain executable after the operator has flattened the position. TP and SL orders stay under the normal lifecycle.
+{% /callout %}
+
+The normalized position-update contract is exchange-neutral. Binance is the first producer; future Bitget, Bybit, and KuCoin private streams can feed the same worker rule without adding an exchange-specific cancellation path.
 
 ---
 

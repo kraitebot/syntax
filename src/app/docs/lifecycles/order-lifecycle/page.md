@@ -80,7 +80,9 @@ Three observer arms, three downstream block dispatches. Each block is itself a s
 
 An active order whose price or quantity differs from its stored reference follows the separate `PrepareOrderCorrectionJob` path. That workflow restores intent and is deduplicated per order, including the exchange-specific Bitget correction class.
 
-A specific high-frequency case: **manual close detection.** When a reduce-only FILL arrives for an order Kraite *doesn't own* against a position Kraite *does* own, the daemon dispatches `PreparePositionReplacementJob` immediately — not waiting for the polling sync to catch the EXPIRED legs of the kraite-owned TP / SL.
+A specific high-frequency case: **manual close detection.** When a reduce-only FILL arrives for an order Kraite *doesn't own* against a position Kraite *does* own, the daemon dispatches `PreparePositionReplacementJob` immediately — not waiting for polling to catch the EXPIRED legs of the Kraite-owned orders. That workflow remains the authority for deciding whether the position is flat or still has residual exposure.
+
+The following flat `ACCOUNT_UPDATE` adds a separate risk action. Once exchange quantity is zero, `CancelPositionOpenOrdersJob` is created as a high-priority root and cancels only live DCA LIMIT orders for that position. It does not wait behind the replacement tree and does not cancel TP or SL protection. Hedge updates match the local direction; a one-way `BOTH` update matches the sole local position on that symbol. Duplicate frames collapse into the same live cancellation.
 
 ---
 
