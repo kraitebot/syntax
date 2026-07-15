@@ -141,6 +141,18 @@ As of 2026-04-30, sync runs in two layers:
 
 A manual close has an additional push-side guard. A zero-quantity account update starts `CancelPositionOpenOrdersJob` independently on the priority queue, removing only the position's live DCA LIMIT orders while `PreparePositionReplacementJob` continues the normal flat-versus-residual decision. This separation removes immediate re-entry risk without replacing lifecycle ownership.
 
+### Decision: REST absence requires confirmed exchange truth (2026-07-15)
+
+Every REST workflow that can act on a missing exchange position now uses the same validated snapshot contract across Binance, Bitget, Bybit, and KuCoin. Vendor errors hidden inside HTTP 200, malformed rows, and raw-versus-normalized count mismatches are unknown state; they cannot overwrite the last trusted account snapshot or prove that a position is flat.
+
+Matching is exact on symbol plus logical direction. Hedge `LONG` and `SHORT` remain distinct. One-way `BOTH` rows derive direction from signed quantity, so a same-symbol opposite-side row cannot satisfy the check.
+
+The first valid flat result schedules a high-priority confirmation after 20 seconds. Replacement reruns its normal exchange query through `PreparePositionReplacementJob`; WAP, quantity sync, and drift use `ConfirmPositionFlatAndCancelOpeningOrdersJob`. Only a second valid flat snapshot may cancel Kraite-owned live opening LIMITs. A reappearing position, invalid response, or opposite-side row leaves orders untouched. Replacement then owns final close-versus-residual reconciliation; WAP and quantity sync stop safely; drift remains alert-only.
+
+{% callout type="warning" title="Why two REST reads?" %}
+Exchange REST responses can be stale or can carry vendor errors inside successful HTTP envelopes. Acting on one apparent absence could cancel the DCA ladder while exposure still exists. The direct User Data Stream zero-quantity event remains immediate because it is already an exchange position event; REST absence pays a 20-second confirmation delay to avoid destructive false-flat action.
+{% /callout %}
+
 ### Observer-driven side effects
 
 `OrderObserver::updated()` reacts to status drift:
@@ -199,6 +211,8 @@ Sign depends on direction. Then `apiModify(target_qty, target_price)` on the exi
 ### Decision: consistency gate (2026-04-21)
 
 Throws if exchange `positionAmt` < local sum of MARKET + FILLED LIMIT quantities. Means Binance hasn't yet committed the triggering fill into `breakEvenPrice`. Step retries with a fresh snapshot rather than computing TP against stale breakeven.
+
+WAP also requires the exact symbol + logical-side row from a validated snapshot. Missing, flat, or opposite-side data cannot resize the TP and instead enters the confirmed-flat safety path. Directional one-way rows remain valid even if the stored hedge-mode flag is stale.
 
 ### Decision: strict doubleCheck (2026-04-21)
 

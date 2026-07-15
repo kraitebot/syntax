@@ -46,6 +46,16 @@ Each account carries `total_positions_long` and `total_positions_short` integers
 
 ---
 
+## Exchange-truth safety
+
+Position existence is matched by exact symbol and logical direction. Hedge `LONG` / `SHORT` rows remain directional; one-way `BOTH` rows derive direction from signed quantity. A same-symbol opposite-side row therefore cannot stand in for the bot-owned exposure.
+
+Before a REST response can drive replacement, WAP, quantity sync, drift follow-up, or recovery, its vendor envelope and normalized rows must validate. HTTP success with an exchange error is unknown state, not an empty account.
+
+One valid missing result only schedules a 20-second high-priority confirmation. The second valid flat snapshot may cancel Kraite-owned opening LIMITs and let the owning workflow continue. Reappearance or invalid data preserves every order. A direct User Data Stream zero-quantity event remains immediate because it is exchange-pushed position truth rather than a REST absence inference.
+
+---
+
 ## Selection priority order
 
 When a slot is open, `HasTokenDiscovery::assignTokensToPositions` walks four priorities top-down and stops at the first hit:

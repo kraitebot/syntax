@@ -82,7 +82,9 @@ An active order whose price or quantity differs from its stored reference follow
 
 A specific high-frequency case: **manual close detection.** When a reduce-only FILL arrives for an order Kraite *doesn't own* against a position Kraite *does* own, the daemon dispatches `PreparePositionReplacementJob` immediately — not waiting for polling to catch the EXPIRED legs of the Kraite-owned orders. That workflow remains the authority for deciding whether the position is flat or still has residual exposure.
 
-The following flat `ACCOUNT_UPDATE` adds a separate risk action. Once exchange quantity is zero, `CancelPositionOpenOrdersJob` is created as a high-priority root and cancels only live DCA LIMIT orders for that position. It does not wait behind the replacement tree and does not cancel TP or SL protection. Hedge updates match the local direction; a one-way `BOTH` update matches the sole local position on that symbol. Duplicate frames collapse into the same live cancellation.
+The following flat `ACCOUNT_UPDATE` adds a separate risk action. Once exchange quantity is zero, `CancelPositionOpenOrdersJob` is created as a high-priority root and cancels only live DCA LIMIT orders for that position. It does not wait behind the replacement tree and does not cancel TP or SL protection. Hedge updates match the local direction; a one-way `BOTH` update derives the logical side from signed quantity. Duplicate frames collapse into the same live cancellation.
+
+REST-only absence uses the same opening-order selector but not the same timing. The first valid flat snapshot schedules a high-priority confirmation after 20 seconds; a second valid flat snapshot is required before cancellation. Replacement performs that second read through its normal workflow, while WAP, quantity sync, and drift use `ConfirmPositionFlatAndCancelOpeningOrdersJob`. Vendor errors, malformed snapshots, reappearance, and opposite-side rows leave all orders intact. This prevents one stale exchange read from stripping the ladder from a still-open position.
 
 ---
 
