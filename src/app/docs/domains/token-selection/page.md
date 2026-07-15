@@ -85,10 +85,23 @@ live trader's tradeable scope requires. Rejected or unreviewed symbols
 never reach this chapter's scoring, however good their correlation
 looks.
 
+The manual enablement switch belongs to the sysadmin. Opening failures
+and hourly allow-list enforcement use a separate automatic system block;
+price alignment is another independent eligibility gate. These automated
+checks never rewrite the manual switch.
+
 The approval proposal is stop-loss-count driven with an absolute rule:
 fewer than 5 stops → approve, 5–10 → adjust, more than 10 → reject.
 
 ### Active Binance reference gate
+
+Listing state has two stages. A delisting marker is an early warning and
+new-opening gate. A delivery time at or before now is terminal exchange
+removal. Missing rows from Binance or Bitget's full catalogues become
+terminal immediately. Bybit and KuCoin expose active-only catalogues, so
+absence there is warning-only until an explicit closed or invalid-symbol
+response confirms terminal removal. If an active row returns, automatic
+listing state and same-asset overlap recover.
 
 Non-Binance ticker aliases are price-checked only against an active,
 non-delisted Binance same-asset reference. If the only Binance sibling
@@ -101,9 +114,9 @@ reference produced recurring threshold alerts even though the mapping
 was valid.
 
 This is strictly a **new-opening eligibility** rule. Existing positions
-are selected by their position/order state and remain covered by sync,
-WAP, protection, and close workflows even if their symbol later leaves
-the candidate pool.
+are selected by their position/order state and remain covered by price
+and kline monitoring, sync, WAP, protection, and close workflows even if
+their symbol later becomes terminal or leaves the candidate pool.
 
 That distinction also applies to operational price comparison. A
 delisted Binance sibling is invalid evidence for selecting a new token,

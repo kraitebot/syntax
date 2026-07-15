@@ -104,9 +104,9 @@ double-fire), two side effects run in tandem. A clean `cancelled`
 transition does neither:
 
 - `position_opening_failed` Pushover notification (priority high) fires to the position's user with token / pair / direction / reason / and whether the symbol was auto-blocked.
-- `exchange_symbol.is_manually_enabled` flips to `false` if it wasn't already, so the opening scheduler stops selecting the same broken token next tick.
+- A separate automatic system block stops the opening scheduler from selecting the same broken token next tick. Automation never changes the sysadmin-owned manual switch.
 
-Re-enabling is an explicit operator action — the hourly `kraite:disable-volatile-tokens` sweep will re-disable it if the token is also on the curated deny-list. Approving via `/system/backtesting` flips `is_manually_enabled=true` in the same write that sets `was_backtesting_approved=true`. Rejection leaves the flag alone; even an enabled token won't be selected while `was_backtesting_approved=false`.
+The automatic block records whether it came from an opening failure or the token allow-list. Clearing that block is separate from backtesting approval and the sysadmin-owned manual enablement control.
 
 **Rationale:** notifying without blocking would let the scheduler keep retrying the same broken token seconds later. Blocking without notifying would hide the rotation silently dropping a symbol.
 

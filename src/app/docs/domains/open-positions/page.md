@@ -80,7 +80,7 @@ cannot prove a safe terminal state ends `failed`, which triggers two
 side effects ([decision detail](/docs/lifecycles/position-lifecycle#decision-failed-cleanup-side-effects-2026-04-23)):
 
 - `position_opening_failed` Pushover notification fires (priority high)
-- `exchange_symbol.is_manually_enabled` flips to `false` so the next selection tick won't re-pick the same broken symbol
+- a separate automatic system block stops the next selection tick from re-picking the same broken symbol without changing the sysadmin-owned manual switch
 
 A `-2022` from Binance during close → `status='failed'` with no retry, with the `position_residual_detected` notification routed to the operator since exchange state may diverge from DB.
 

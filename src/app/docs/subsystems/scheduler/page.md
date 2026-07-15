@@ -23,7 +23,7 @@ This is the **subsystem lens** view. For the persistent process that replaced on
 | `kraite:cron-store-accounts-balances` | 5 min | yes | Snapshot account balances per exchange |
 | `kraite:cron-refresh-exchange-symbols` | hourly :15 | yes | Per-symbol leverage-bracket fan-out |
 | `kraite:cron-conclude-symbols-direction` | hourly :30 | yes | TAAPI indicator → direction |
-| `kraite:disable-volatile-tokens` | hourly :45 | yes | Sweep volatile / structurally-brittle tokens |
+| `kraite:disable-volatile-tokens` | hourly :45 | yes | System-block non-allow-listed tokens without changing the manual switch |
 | `backup:run --only-db` | every 3h :07 | no | Encrypted database snapshot to B2; two whole-command attempts |
 | `backup:monitor` | every 6h :15 | no | Alert on stale/unhealthy B2 backups |
 | `kraite:purge-candles` | daily 03:00 | yes | Retention sweep on candle data |
