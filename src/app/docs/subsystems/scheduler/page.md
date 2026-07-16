@@ -93,6 +93,27 @@ An interrupted release warmup left Athena in maintenance mode for 53 hours. The 
 
 Since then, the health watchdog (`kraite:cron-check-system-health`) is the one scheduled command that runs **even in maintenance mode**. While the box is down it performs a single check — "has this box been in maintenance longer than the threshold" (default 45 minutes, sized above a full cooldown → deploy → warmup span) — and pages CRITICAL on breach, re-paging every 30 minutes until an operator brings the box up. The full check pass stays skipped during maintenance, so normal deploy windows never produce transient alerts. The release runbooks carry the matching gates: warmup hard-verifies the box answers "UP" after warming, and the fleet health grid renders a **Maint** column that fails on any leftover maintenance marker.
 
+### Recovery after warmup
+
+Athena resumes dispatch only after the workers are online. Warmup then starts
+a 10-minute recovery grace for the two health signals produced through the
+default dispatcher: account-balance history and indicators. Those timestamps
+can still describe the pre-deploy state until the first producer jobs finish.
+
+The grace does not mute mark prices, queues, Redis, the database, daemons,
+scheduler liveness, or fleet heartbeats. Indicator freshness also checks the
+exact symbol's producer workflow: a recent query or conclusion in progress is
+an active repair, while terminal work or an abandoned old step cannot suppress
+a real alert.
+
+{% callout title="Why the grace is narrow" %}
+On 2026-07-16 the balance watchdog ran seconds before the first post-warmup
+balance write. Later, BNB, ATOM, and GRT paged as stale while their indicator
+workflows were visibly executing. Both alerts described old timestamps, but
+neither needed operator action. The recovery rule removes those races without
+creating a general post-deploy blind spot.
+{% /callout %}
+
 ---
 
 ## Why a daemon replaced `steps:dispatch`

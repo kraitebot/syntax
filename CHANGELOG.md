@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.4] — 2026-07-16
+
+### Alert behavior refresh
+
+- [IMPROVED] Scheduler, indicator, and notification chapters now document
+  post-warmup freshness grace, active per-symbol repairs, and normal-priority
+  WAP delivery.
+
 ## [0.3.3] — 2026-07-14
 
 ### Operational behavior refresh

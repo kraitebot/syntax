@@ -55,6 +55,18 @@ Indicator computation is dispatched by the scheduler:
 
 Direction conclusion is a downstream concern — see [Signal → direction](/docs/lifecycles/signal-direction).
 
+### Freshness means unattended, not merely old
+
+The health watchdog allows two hours for the hourly full-universe pass. A
+symbol whose timestamp has crossed that boundary is still not paged while its
+own recent `QuerySymbolIndicatorsJob` or
+`ConcludeSymbolDirectionAtTimeframeJob` remains active. This distinguishes an
+already-running repair from an unattended stale signal. Completed, failed, or
+old abandoned steps do not suppress the alert.
+
+After deployment, Athena also gives this dispatcher-derived signal a bounded
+10-minute recovery grace. Other health surfaces remain active throughout.
+
 ---
 
 ## Why only Binance accounts query TAAPI

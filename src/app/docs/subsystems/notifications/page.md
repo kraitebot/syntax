@@ -23,6 +23,14 @@ Because the Threshold only sees what survives the Throttler, the two must be com
 
 The default control. A `cache_duration` window per `(canonical, relatable)` collapses bursts of the same alert into one send. With a `cache_key` it uses an atomic cache claim (`Cache::add`) so multiple worker servers racing the same event still emit only once. This is what stops, e.g., a flapping price daemon from paging the admin every second.
 
+### Delivery priority follows required action
+
+Severity and device interruption are separate decisions. A successful WAP
+application remains high severity in audit and email presentation because it
+is an important position event, but Pushover delivers it at normal priority.
+It stays visible without bypassing quiet hours; the bot already completed the
+protective TP adjustment, so no immediate operator action is required.
+
 ---
 
 ## Threshold — escalate only on recurrence
