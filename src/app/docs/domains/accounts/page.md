@@ -17,9 +17,18 @@ This is the **business-domain lens** view. For where account credentials are rea
 | `api_key` / `secret` / (optional `passphrase`) | Encrypted credentials — Laravel encrypted casts |
 | `can_trade` | Master enable / disable. False = read-only — no order will ever be placed |
 | `position_mode` | One-way (single net position per symbol) OR Hedge / Dual (LONG and SHORT positions per symbol coexist) |
-| `quote_currency` | The settlement asset — typically USDT |
+| `quote_currency` | The settlement asset — USDT or USDC for Bitget futures |
 
 The `(user_id, api_system_id)` pair is unique. A user has at most one account per exchange.
+
+### Bitget product context
+
+Bitget splits stablecoin perpetuals into separate products. An account-wide
+read uses the account's configured quote: USDT selects `USDT-FUTURES` and
+USDT margin; USDC selects `USDC-FUTURES` and USDC margin. Symbol, order, and
+position operations use the related exchange symbol's quote instead. A
+missing or unsupported quote stops before any exchange request, so Kraite
+cannot silently query or trade the wrong Bitget wallet.
 
 ---
 

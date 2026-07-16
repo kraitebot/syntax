@@ -52,6 +52,13 @@ plan orders inherit the account's crossed or isolated margin mode. The
 combined protection call identifies hedge positions as long or short and
 one-way positions as buy or sell.
 
+Every Bitget round-trip carries the stablecoin product selected by the
+account or exchange symbol. USDT uses `USDT-FUTURES` with USDT margin; USDC
+uses `USDC-FUTURES` with USDC margin. This context follows the entire
+lifecycle: balance and position reads, leverage and margin setup, entry and
+protection placement, synchronization, modification, cancellation, recovery,
+and close. Missing or unsupported quotes fail before an API call.
+
 Bitget's HTTP status alone is not exchange truth. A placement or account read
 advances only when the vendor envelope reports success. A non-success or
 malformed envelope fails before response mapping, including after a retry, so

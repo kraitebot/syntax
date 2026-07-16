@@ -98,10 +98,17 @@ fewer than 5 stops → approve, 5–10 → adjust, more than 10 → reject.
 Listing state has two stages. A delisting marker is an early warning and
 new-opening gate. A delivery time at or before now is terminal exchange
 removal. Missing rows from Binance or Bitget's full catalogues become
-terminal immediately. Bybit and KuCoin expose active-only catalogues, so
+terminal immediately. Bitget's full catalogue is the atomic merge of its
+USDT and USDC perpetual products; if either product request fails, neither
+family is reconciled. Bybit and KuCoin expose active-only catalogues, so
 absence there is warning-only until an explicit closed or invalid-symbol
 response confirms terminal removal. If an active row returns, automatic
 listing state and same-asset overlap recover.
+
+A token's USDT and USDC contracts remain separate exchange symbols. Each
+keeps its own quote, pair, precision, tick size, and minimum-notional rules,
+so an account configured for USDC can select the USDC contract without
+colliding with its USDT sibling.
 
 Non-Binance ticker aliases are price-checked only against an active,
 non-delisted Binance same-asset reference. If the only Binance sibling
