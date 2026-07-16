@@ -46,7 +46,16 @@ Triggered by `kraite:cron-create-positions`. Running autonomously since 2026-04-
 10. `PlaceProfitOrderJob` — initial TP based on `opening_price`
 11. `ActivatePositionJob` — validates all orders placed, sets `status='active'`
 
-Bitget uses a combined `PlacePositionTpslJob` that ships TP + SL in a single API call, so the SL-before-TP ordering doesn't apply there.
+Bitget uses a combined `PlacePositionTpslJob` that ships TP + SL in a single
+API call, so the SL-before-TP ordering doesn't apply there. Market, limit, and
+plan orders inherit the account's crossed or isolated margin mode. The
+combined protection call identifies hedge positions as long or short and
+one-way positions as buy or sell.
+
+Bitget's HTTP status alone is not exchange truth. A placement or account read
+advances only when the vendor envelope reports success. A non-success or
+malformed envelope fails before response mapping, including after a retry, so
+it cannot activate a position or masquerade as an empty account snapshot.
 
 {% callout type="warning" title="SL-before-TP invariant (2026-04-23 PM)" %}
 Earlier on 2026-04-23 we hit realised losses on fast-trade tokens (LAB #107, BSB #109, LAB #121) where the TP LIMIT filled within milliseconds of the market entry, then the follow-up SL placement arrived at Binance after the position was already closed. Binance rejected with `-4509 "Time in Force GTE can only be used with open positions"`. The cascade ran `CancelPositionJob`, the forced MARKET-CANCEL closed the position at a worse price than entry.

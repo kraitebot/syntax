@@ -23,7 +23,7 @@ title: Kraite — push
 | Folder | Path packages? |
 |---|---|
 | `ingestion.kraite.test` | yes (kraitebot/core, brunocfalcao/step-dispatcher) — push first |
-| `admin.kraite.test` / `console.kraite.test` / `kraite.test` / `syntax.kraite.test` | none — skip Step 2-4 |
+| `admin.kraite.test` / `kraite.test` / `syntax.kraite.test` | none — skip Step 2-4 |
 
 ---
 

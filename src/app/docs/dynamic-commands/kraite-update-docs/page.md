@@ -4,7 +4,7 @@ title: Kraite — update-docs
 
 `kraite-update-docs` keeps Kraite documentation current with infrastructure, architecture, and feature changes. It maintains **two surfaces** — the raw functional specs in `~/Herd/docs/kraite/` and this curated four-lens reader site at `~/Code/syntax.kraite.test/`. {% .lead %}
 
-**Ingestion profile only.** From any other profile (admin / console / syntax / kraite) this is a polite no-op — the Kraite functional docs are exclusively about the trading system, there's nothing for web projects to maintain here. The web project's own `CLAUDE.md` and per-app deploy doc cover the per-app surface.
+The canonical updater runs from the ingestion repository because that project owns the cross-Kraite documentation set. A release started from admin, Kraite, or Syntax switches to that ingestion context for its documentation phase, so cross-project changes are still captured before shipping.
 
 ---
 
@@ -14,7 +14,7 @@ title: Kraite — update-docs
 |---|---|---|
 | `~/Herd/docs/kraite/00-context/` | Architecture, server prep, go-live | Infrastructure / new servers / arch decisions |
 | `~/Herd/docs/kraite/02-features/` | Per-feature functional specs | Feature behaviour or new feature |
-| `~/Herd/docs/kraite/04-admin/` / `05-console/` | Operator UI / sysadmin SPA specs | Admin or console behaviour change |
+| `~/Herd/docs/kraite/04-admin/` | Operator UI / sysadmin specs | Admin behaviour change |
 | `~/Herd/.credentials/kraite/servers.json` | Server IPs / roles / credentials | New server, IP change, role change |
 | `~/Herd/.credentials/kraite/deploy-notes.md` | Deploy lessons (numbered, never renumbered) | Deploy incident, new gotcha |
 | `~/Herd/.credentials/kraite/hardening.json` | Per-server hardening checklist | Security changes, new packages |
@@ -115,5 +115,5 @@ Generic guidelines (PHP / Laravel / git / tests / debugging conventions) do NOT 
 
 - [Kraite — read-docs](/docs/dynamic-commands/kraite-read-docs) — the reader counterpart
 - [Kraite — tag](/docs/dynamic-commands/kraite-tag) — the parent that calls update-docs as Step 1c
-- [Kraite — release](/docs/dynamic-commands/kraite-release) — Phase 0 entry point (ingestion only)
+- [Kraite — release](/docs/dynamic-commands/kraite-release) — Phase 0 entry point for every profile
 - [update-docs](/docs/dynamic-commands/update-docs) — generic version (`docs/<project>/` for any project)

@@ -10,13 +10,13 @@ The **server lens** answers "where does this physically run?" Kraite's ten-box H
 
 {% quick-link title="Hyperion (database + Redis)" icon="theming" href="/docs/servers/hyperion" description="The stateful core. MySQL 8.4.8 plus Redis 8.0.5 on a dedicated AMD-EPYC box. Tuned for the write-heavy step-dispatcher workload — 10 G buffer pool, 5000 IO capacity, non-blocking backups." /%}
 
-{% quick-link title="Athena (ingestion)" icon="presets" href="/docs/servers/athena" description="The trading brain. Scheduler, dispatch daemon, both WebSocket daemons, the user-data Horizon supervisor. Web role moved to pheme on 2026-06-01." /%}
+{% quick-link title="Athena (ingestion)" icon="presets" href="/docs/servers/athena" description="The trading brain. Scheduler, dispatch daemon, both WebSocket daemons, user-data Horizon, and a secondary indicators pool. Web role moved to pheme on 2026-06-01." /%}
 
-{% quick-link title="Pheme (web)" icon="presets" href="/docs/servers/pheme" description="Dedicated web host — nginx + php8.5-fpm serving admin.kraite.com + console.kraite.com + kraite.com + syntax.kraite.com. No exchange API calls, no step-router consumer. Smallest non-trivial blast radius in the fleet." /%}
+{% quick-link title="Pheme (web)" icon="presets" href="/docs/servers/pheme" description="Dedicated web host — nginx + php8.5-fpm serving admin.kraite.com + kraite.com + syntax.kraite.com. No exchange API calls, no step-router consumer. Smallest non-trivial blast radius in the fleet." /%}
 
 {% quick-link title="Eos + Iris + Nyx + Hemera + Palaemon + Aristaeus (workers)" icon="plugins" href="/docs/servers/eos-iris" description="Six interchangeable trading workers — Horizon consumers competing on the same positions / orders / priority queues. No per-account-to-box binding by design. Six distinct public IPs spread Binance API call load naturally across workers as dispatched jobs distribute." /%}
 
-{% quick-link title="Tyche (indicators + cronjobs)" icon="lightbulb" href="/docs/servers/tyche" description="Isolated worker. Runs the 10-process indicator pool plus 3-process cronjobs pool. Kept off the trading boxes so TAAPI rate-limit waits never starve real-time position / order processing." /%}
+{% quick-link title="Tyche (indicators + cronjobs)" icon="lightbulb" href="/docs/servers/tyche" description="Isolated worker. Runs 8 indicator, 6 cronjob, 3 priority, and 2 connectivity-probe processes. Kept off the trading boxes so TAAPI rate-limit waits never starve real-time position / order processing." /%}
 
 {% /quick-links %}
 

@@ -26,7 +26,7 @@ export const navigation = [
       { title: 'Hyperion (database + Redis)', href: '/docs/servers/hyperion' },
       { title: 'Athena (ingestion)', href: '/docs/servers/athena' },
       { title: 'Pheme (web)', href: '/docs/servers/pheme' },
-      { title: 'Eos + Iris + Nyx + Hemera (workers)', href: '/docs/servers/eos-iris' },
+      { title: 'Six trading workers', href: '/docs/servers/eos-iris' },
       { title: 'Tyche (indicators + cronjobs)', href: '/docs/servers/tyche' },
     ],
   },

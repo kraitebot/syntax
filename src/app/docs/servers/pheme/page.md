@@ -2,7 +2,7 @@
 title: Pheme (web)
 ---
 
-Pheme is Kraite's **dedicated web host** — the box that serves every public surface (admin, console, kraite.com, syntax) and nothing else. It does no exchange execution, no scheduler work, no step routing. It exists so that web traffic and trading runtime can fail independently. {% .lead %}
+Pheme is Kraite's **dedicated web host** — the box that serves every public surface (admin, kraite.com, syntax) and nothing else. It does no exchange execution, no scheduler work, no step routing. It exists so that web traffic and trading runtime can fail independently. {% .lead %}
 
 This is the **server lens** view. For the box that creates the trading steps pheme reads from the DB, see [athena](/docs/servers/athena).
 
@@ -13,27 +13,31 @@ This is the **server lens** view. For the box that creates the trading steps phe
 | Vhost | Notes |
 |---|---|
 | `admin.kraite.com` | Operator UI — Laravel app reading from the shared `kraite` DB on hyperion |
-| `console.kraite.com` | New admin-style panel — same Laravel stack as admin |
 | `kraite.com` | Public marketing site (with `www.kraite.com` canonicalising to apex) |
 | `syntax.kraite.com` | Public docs site (this site) — Next.js static export, no PHP |
 
-Stack: **nginx 1.28.3** terminating TLS, **php8.5-fpm** for the three Laravel apps, **Let's Encrypt** certs issued via the Cloudflare DNS-01 plugin (so the cert path works even with Cloudflare proxy in front), **Cloudflare** Full (strict) SSL mode end-to-end.
+Stack: **nginx 1.28.3** terminating TLS, **php8.5-fpm** for the two Laravel apps, **Let's Encrypt** certs issued via the Cloudflare DNS-01 plugin (so the cert path works even with Cloudflare proxy in front), **Cloudflare** Full (strict) SSL mode end-to-end.
 
-Background jobs drain through **three per-app Horizon supervisors** — `kraite-horizon-admin`, `kraite-horizon-console`, `kraite-horizon-kraite` — one per Laravel checkout, each namespaced by its own Redis prefix. All three apps run `QUEUE_CONNECTION=redis`. Admin and kraite.com set `HORIZON_ENV=pheme` and get the fleet-config `pheme` block; console doesn't load kraitebot/core and runs its stock `production` block on the `default` queue.
+Background jobs drain through **two per-app Horizon supervisors** —
+`kraite-horizon-admin` and `kraite-horizon-kraite` — one per Laravel
+checkout, each namespaced by its own Redis prefix. Both apps run
+`QUEUE_CONNECTION=redis`, set `HORIZON_ENV=pheme`, and consume the
+fleet-config `pheme` block.
 
 | Queue | Processes | What it consumes |
 |---|---|---|
 | `pheme-web` (logical `web`) | 2 per app (admin, kraite.com) | Web-originated background jobs — notifications, mail, billing webhooks dispatched over Redis |
 | `pheme` | 1 per app (admin, kraite.com) | Server-pinned connectivity probes (account-onboarding flow) |
-| `default` | console's stock pool | Console's own dispatches |
 
-Admin and kraite.com carry `REDIS_QUEUE=pheme-web` in their `.env` (since 2026-06-05), so the queue they dispatch to is the same physical `pheme-web` their Horizon consumes. Console's stock `production` block consumes the `default` queue its own dispatches land on — every app's dispatch ↔ consumption pair is aligned.
+Admin and kraite.com carry `REDIS_QUEUE=pheme-web` in their `.env`
+(since 2026-06-05), so the queue they dispatch to is the same physical
+`pheme-web` their Horizon consumes.
 
 ---
 
 ## What does NOT run on Pheme
 
-- No `positions` / `orders` / `priority` / `indicators` / `cronjobs` / `user-data-stream` consumer — Horizon on pheme only consumes the web lane (physical `pheme-web`), the hostname-keyed `pheme` probe queue, and console's `default` queue.
+- No `positions` / `orders` / `priority` / `indicators` / `cronjobs` / `user-data-stream` consumer — Horizon on pheme only consumes the web lane (physical `pheme-web`) and the hostname-keyed `pheme` probe queue.
 - No exchange API calls. No outbound trading traffic of any kind.
 - No step-router consumer — the StepRouter explicitly excludes pheme from its candidate pool (per the `router-env-filter` rule), so trading work never lands here even by accident.
 - No scheduler crontab (athena owns that).
@@ -62,7 +66,7 @@ The 2026-05-24 fleet rebuild briefly folded the web role into athena. In practic
 
 ## Failure isolation
 
-A reboot of pheme takes down the four public vhosts for the duration of the reboot — Cloudflare absorbs the gap and visitors see the CF error page. Trading is **unaffected**: athena keeps dispatching, workers keep draining, the exchanges don't care. This is the smallest non-trivial blast radius in the fleet (after the workers).
+A reboot of pheme takes down the three public vhosts for the duration of the reboot — Cloudflare absorbs the gap and visitors see the CF error page. Trading is **unaffected**: athena keeps dispatching, workers keep draining, the exchanges don't care. This is the smallest non-trivial blast radius in the fleet (after the workers).
 
 A reboot of athena does **NOT** take pheme offline — pheme's Laravel apps read from hyperion directly and don't depend on athena for anything. Visitors hitting the operator UI during an athena reboot see the site, but underlying data may look stale (no new steps being created), and any artisan command on pheme that recurses into ingestion's SSH-bridged calls (admin's optional `KRAITE_INGESTION_SSH_*` path) will fail until athena returns.
 
@@ -72,5 +76,5 @@ A reboot of athena does **NOT** take pheme offline — pheme's Laravel apps read
 
 - **[Athena (ingestion)](/docs/servers/athena)** — the box that drives the trading runtime pheme's apps observe
 - **[Hyperion (database + Redis)](/docs/servers/hyperion)** — the stateful core both athena and pheme depend on
-- **[Eos + Iris + Nyx (workers)](/docs/servers/eos-iris)** — the trading worker pool (no relationship to pheme by design)
+- **[Six trading workers](/docs/servers/eos-iris)** — the trading worker pool (no relationship to pheme by design)
 - **[Architecture overview](/docs/servers/architecture-overview)** — the full fleet map and per-role role assignments

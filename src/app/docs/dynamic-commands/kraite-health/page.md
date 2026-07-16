@@ -2,7 +2,7 @@
 title: Kraite — health
 ---
 
-`kraite-health` is the **fleet-wide datagrid**. It always probes the full 10-server fleet in parallel and renders one table keyed by hostname. Server-scoped only — no website checks, no TLS cert checks, no maintenance-mode checks (those belong to a separate command). {% .lead %}
+`kraite-health` is the **fleet-wide datagrid**. It always probes the full 10-server fleet in parallel and renders one table keyed by hostname. Server-scoped only — no website or TLS checks. Laravel maintenance markers are included because a down-marker silently disables scheduled work while processes still look healthy. {% .lead %}
 
 ---
 
@@ -22,6 +22,8 @@ For every box, in parallel, over SSH:
 | **Step Dispatcher** | athena only — `default: N pending N failed | trading: N pending N failed`, failed window = 20 min |
 | **PHP-FPM** | pheme only — `active (Xd Yh)` with age since last restart. Athena's PHP-FPM is masked since 2026-06-01 |
 | **Reboot** | `YES` when `/var/run/reboot-required` exists |
+| **Maintenance** | Any Laravel `storage/framework/down` marker on ingestion or pheme |
+| **Version** | Deployed tag plus `kraitebot/core` version versus the latest readable tags |
 
 If SSH times out, the row shows `UNREACHABLE` across all columns.
 
@@ -33,7 +35,7 @@ If SSH times out, the row shows `UNREACHABLE` across all columns.
 |---|---|---|
 | hyperion | 135.181.93.226 | database + redis |
 | athena | 37.27.243.164 | ingestion |
-| pheme | 62.238.38.113 | web (admin + console + kraite.com + syntax) |
+| pheme | 62.238.38.113 | web (admin + kraite.com + syntax) |
 | eos | 204.168.137.153 | worker (positions + orders) |
 | iris | 204.168.138.83 | worker (positions + orders) |
 | nyx | 204.168.129.189 | worker (positions + orders) |
@@ -46,7 +48,7 @@ If SSH times out, the row shows `UNREACHABLE` across all columns.
 
 ## Alert thresholds
 
-After the table, the command flags anything off-normal: CPU > 80%, disk > 85%, supervisor DEGRADED or FATAL, Horizon not RUNNING, athena streams not RUNNING, athena dispatch daemon non-RUNNING, athena failed steps > 0 in last 20 min, athena pending steps > 50 (daemon stalled or workers behind), pheme PHP-FPM inactive, `/var/run/reboot-required` present, or any SSH UNREACHABLE.
+After the table, the command flags anything off-normal: CPU > 80%, disk > 85%, supervisor DEGRADED or FATAL, Horizon not RUNNING, athena streams not RUNNING, athena dispatch daemon non-RUNNING, athena failed steps > 0 in last 20 min, athena pending steps > 50, pheme PHP-FPM inactive, a maintenance marker, a deployed tag/core version behind its readable latest tag, `/var/run/reboot-required`, or any SSH failure.
 
 If nothing is off: `All servers healthy.`
 

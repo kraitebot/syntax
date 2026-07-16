@@ -2,7 +2,7 @@
 title: Kraite — profile
 ---
 
-`kraite-profile` is the **profile-detection primitive** every other kraite-* command recurses into before branching. It maps the current working directory's basename to one of five Kraite project profiles and returns the row of the matrix the caller needs. {% .lead %}
+`kraite-profile` is the **profile-detection primitive** every other kraite-* command recurses into before branching. It maps the current working directory's basename to one of four Kraite project profiles and returns the row of the matrix the caller needs. {% .lead %}
 
 Run standalone, it dumps the matched profile row for Bruno. Run recursively from another kraite-* command, it gives the parent the profile name and the columns relevant to that parent (deploy target, cooldown style, warmup shape, CI gate, docs phase, health scope).
 
@@ -14,7 +14,6 @@ Run standalone, it dumps the matched profile row for Bruno. Run recursively from
 |---|---|---|---|---|---|---|
 | `ingestion.kraite.test` | **ingestion** | athena + 7 workers (eos, iris, nyx, hemera, palaemon, aristaeus, tyche) | yes | hard gate | step-dispatcher + project, must pass | full (raw specs + syntax site) |
 | `admin.kraite.test` | **web-app-with-queue** | pheme | yes | no | if suite exists | none |
-| `console.kraite.test` | **web-app-with-queue** | pheme | yes | no | if suite exists | none |
 | `kraite.test` | **web-app** | pheme | yes | no | if suite exists | none |
 | `syntax.kraite.test` | **static-site** | pheme (atomic file swap) | yes | no | none | none |
 
@@ -52,9 +51,9 @@ The post-v1.49.8 release ordering: deploy ALL boxes first (no mixed-code window)
 | `positions` | — | 5 each | — |
 | `orders` | — | 8 each | — |
 | `priority` | — | 3 each | — |
-| `indicators` | — | — | 10 |
-| `cronjobs` | — | — | 3 |
-| `<hostname>` (connectivity probe) | 1 | 1 each | 1 |
+| `indicators` | 10 | — | 8 |
+| `cronjobs` | — | — | 6 |
+| `<hostname>` (connectivity probe) | 1 | 1 each | 2 |
 
 Each worker carries a single-process queue named after its hostname for the account-onboarding connectivity test (the bot dispatches a probe job to each per-host queue to verify each server can reach the user's exchange account). Hyperion doesn't run Horizon — pure DB + Redis.
 
@@ -73,6 +72,6 @@ Standalone invocation prints:
 ## Cross-lens links
 
 - **[Architecture overview](/docs/servers/architecture-overview)** — the 10-box fleet these profiles map onto
-- **[Athena (ingestion)](/docs/servers/athena)** — the box ingestion-profile commands target first
+- **[Athena (ingestion)](/docs/servers/athena)** — the scheduler host that ingestion warmup restores last
 - **[Pheme (web)](/docs/servers/pheme)** — the box all web profiles deploy to
 - **[Kraite — release](/docs/dynamic-commands/kraite-release)** — the parent pipeline that branches off this profile

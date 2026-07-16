@@ -24,6 +24,6 @@ The **subsystem lens** answers "what does this piece of machinery do?" — indep
 
 The subsystem lens is one of four. The same machinery shows up under three other angles:
 
-- **[Servers](/docs/servers/architecture-overview)** — *where* each subsystem physically runs (athena hosts the daemon + scheduler + streams + the public web vhosts; eos + iris + nyx consume trading queues; tyche owns indicators + cronjobs; hyperion holds MySQL + Redis).
+- **[Servers](/docs/servers/architecture-overview)** — *where* each subsystem physically runs (athena hosts the daemon + scheduler + streams; pheme hosts the public web vhosts; six trading workers consume position/order queues; tyche owns cronjobs plus part of the indicator lane; hyperion holds MySQL + Redis).
 - **[Business domains](/docs/domains/open-positions)** — *what* the subsystems manipulate (positions, orders, indicators, accounts, token selection).
 - **[Lifecycles](/docs/lifecycles/position-lifecycle)** — *how* a single end-to-end flow threads through every subsystem in turn.

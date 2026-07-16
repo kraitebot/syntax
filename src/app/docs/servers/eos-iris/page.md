@@ -47,7 +47,7 @@ There is **no per-account-to-box routing** in Kraite by design. Accounts live in
 ## Why workers and the indicator pool are split
 
 {% callout title="Architectural decision" %}
-TAAPI's 75 req / 15 s rate limit means the indicator queue spends a substantial fraction of its wall-clock time **waiting** for the next window slot. Running those waiters on the same Horizon process pool as position / order work would starve real-time trading whenever an indicator fan-out is in progress. Moving indicators onto their own dedicated box (tyche) means the throttler can park as long as it needs without ever delaying a position-close atomic. See [tyche](/docs/servers/tyche).
+The production TAAPI throttler admits 65 requests per 15 seconds, so the indicator queue spends part of its wall-clock time **waiting** for the next window slot. Running those waiters in the same Horizon process pool as position/order work would starve real-time trading during a fan-out. Indicator processes therefore live on Tyche plus Athena's secondary pool, never on these six trading workers. See [tyche](/docs/servers/tyche).
 {% /callout %}
 
 ---
@@ -64,13 +64,13 @@ Loss of *one* worker reduces fleet capacity to five-sixths on positions / orders
 
 ## Horizon restart contract
 
-The Horizon-restart-after-job-class-change rule (`php artisan horizon:terminate` after editing any class under `Jobs/`, `Listeners/`, queued classes) applies to **Eos, Iris, Nyx, Hemera, Palaemon, and Aristaeus**, plus tyche for indicator / cronjob classes — athena's `user-data-stream` supervisor is a separate pool and picks up changes on its own restart cycle, and the dispatch daemon is yet another supervisor entirely.
+The Horizon-restart-after-job-class-change rule (`php artisan horizon:terminate` after editing any class under `Jobs/`, `Listeners/`, queued classes) applies to **Eos, Iris, Nyx, Hemera, Palaemon, and Aristaeus**, plus Tyche and Athena for their indicator/user-data pools. Athena's dispatch daemon and WS streams are separate named supervisor units and must also be restarted when their long-lived code changes.
 
 ---
 
 ## Cross-lens links
 
 - **[Position lifecycle](/docs/lifecycles/position-lifecycle)** — the step sequences these workers execute
-- **[Athena (ingestion + web)](/docs/servers/athena)** — the box that dispatches workloads here
+- **[Athena (ingestion)](/docs/servers/athena)** — the box that dispatches workloads here
 - **[Tyche (indicators + cronjobs)](/docs/servers/tyche)** — the sibling worker isolated from trading
 - **[Horizon queues](/docs/subsystems/horizon-queues)** — queue assignment, balancing strategies, supervisor config

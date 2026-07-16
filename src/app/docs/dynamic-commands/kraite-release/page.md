@@ -2,7 +2,7 @@
 title: Kraite — release
 ---
 
-`kraite-release` is the **end-to-end release pipeline** for the current Kraite project — docs (ingestion only), tests, tag, deploy, warmup, health check. Profile-aware: the pipeline auto-skips phases that don't apply to the active project. {% .lead %}
+`kraite-release` is the **end-to-end release pipeline** for the current Kraite project — docs, tests, tag, deploy, warmup, health check. Profile-aware: phases use the active project's release shape, while documentation always runs through the ingestion-owned cross-Kraite updater. {% .lead %}
 
 ---
 
@@ -10,12 +10,12 @@ title: Kraite — release
 
 The pipeline runs in this fixed order. Phases that don't apply to the profile are auto-skipped (not errors).
 
-| Phase | ingestion | admin / console (web-app-with-queue) | syntax (static-site) | kraite (web-app) |
+| Phase | ingestion | admin (web-app-with-queue) | syntax (static-site) | kraite (web-app) |
 |---|---|---|---|---|
-| 0 — Update docs | full | skip | skip | skip |
+| 0 — Update docs | full | full via ingestion context | full via ingestion context | full via ingestion context |
 | 1 — Tests | step-dispatcher + project (mandatory) | run if suite exists | skip | run if suite exists |
 | 2 — Tag | yes | yes | yes | yes |
-| 3 — Deploy | multi-server (athena → workers) | pheme | pheme (atomic file swap) | pheme |
+| 3 — Deploy | multi-server (deploy all; workers warm first, athena last) | pheme | pheme (atomic file swap) | pheme |
 | 4 — Health check | full fleet | pheme web + Horizon | URL 200 | pheme web + DB |
 | 5 — Cleanup | cancel session schedulers | same | same | same |
 
@@ -69,4 +69,4 @@ Phase 3 on ingestion is decided centrally: **cool down ALL → deploy ALL → wa
 - [Kraite — deploy](/docs/dynamic-commands/kraite-deploy) — Phase 3 entry point
 - [Kraite — warmup](/docs/dynamic-commands/kraite-warmup) — Phase 3 finisher
 - [Kraite — health](/docs/dynamic-commands/kraite-health) — Phase 4 entry point
-- [Kraite — update-docs](/docs/dynamic-commands/kraite-update-docs) — Phase 0 entry point (ingestion only)
+- [Kraite — update-docs](/docs/dynamic-commands/kraite-update-docs) — Phase 0 entry point; non-ingestion releases switch context first

@@ -2,7 +2,7 @@
 title: Kraite — deploy
 ---
 
-`kraite-deploy` ships the latest tagged code to its production target. Behaviour is decided by the active profile: ingestion fans out across the trading fleet; web projects (admin / console / kraite / syntax) land on pheme. {% .lead %}
+`kraite-deploy` ships the latest tagged code to its production target. Behaviour is decided by the active profile: ingestion fans out across the trading fleet; web projects (admin / kraite / syntax) land on pheme. {% .lead %}
 
 **Tag-before-deploy is a hard rule.** No deploy without a tag. The deploy target checks out the tagged commit, never branch HEAD. Run [`kraite-tag`](/docs/dynamic-commands/kraite-tag) first if not already tagged.
 
@@ -26,12 +26,12 @@ title: Kraite — deploy
 | 2. Determine tag | `git tag --sort=-v:refname | head -1` |
 | 3. Deploy code | All 8 boxes in parallel run `DEPLOY_TAG=v<version> bash deploy.sh`. Wait for `Deploy complete` everywhere |
 | 4. Warmup workers | eos + iris + nyx + hemera + palaemon + aristaeus + tyche in parallel via [`kraite-warmup`](/docs/dynamic-commands/kraite-warmup) |
-| 5. Warmup athena | athena last — resumes dispatch daemon, both WS streams, user-data Horizon supervisor, scheduler cron |
+| 5. Warmup athena | athena last — resumes dispatch daemon, both WS streams, user-data and indicators Horizon pools, scheduler cron |
 
 The full-stop between phases is intentional. Either the whole fleet is on the OLD tag (before Phase 3) or the whole fleet is on the NEW tag (after Phase 3). No moment where athena dispatches new-code jobs to workers still on old code.
 
 {% callout title="Why workers warm before athena" %}
-With the current 10-box fleet, athena no longer holds a self-sufficiency footprint on positions / orders / priority queues — its only Horizon pool is `user-data-stream`. Workers MUST be the first consumers up. The instant `/etc/cron.d/kraite-scheduler` is restored on athena and the first cron tick fires, dispatched jobs flow straight to workers without piling up in Redis.
+With the current 10-box fleet, athena no longer holds a self-sufficiency footprint on positions / orders / priority queues. Its Horizon pools are `user-data-stream` (5), `indicators` (10), and the athena connectivity probe (1). Workers MUST be the first consumers up. The instant `/etc/cron.d/kraite-scheduler` is restored on athena and the first cron tick fires, dispatched jobs flow straight to workers without piling up in Redis.
 
 **Historical note (incident 2026-05-24, v1.49.8 release):** the previous flow was athena-first, workers-second. Warming athena resumed the scheduler before workers were deployed, which filled the worker queue (1298 pending) and tripped `deploy.sh`'s `STATUS:COOLED_DOWN` hard gate on each worker. The release only completed via a sed-stripped `deploy-force.sh` that bypassed the cooldown check, plus the `FORCE_DEPLOY=1` env-var bypass added to `deploy.sh` afterwards. The flow above is the structural fix.
 {% /callout %}
@@ -52,9 +52,9 @@ For web projects, no auto-backup — Bruno's call if a backup step is needed bef
 
 ---
 
-## Web profiles (admin / console / kraite)
+## Web profiles (admin / kraite)
 
-Single-host deploy on pheme. All three profiles use the **composer manifest swap** pattern: `composer.json` (path-symlinked dev manifest with `../packages/*` constraints) is replaced on the server with `composer.production.json` (VCS repos on GitHub, versioned constraints) after `git checkout v<version>`. This ends hand-edited composer.json on the server.
+Single-host deploy on pheme. Both PHP profiles use the **composer manifest swap** pattern: `composer.json` (path-symlinked dev manifest with `../packages/*` constraints) is replaced on the server with `composer.production.json` (VCS repos on GitHub, versioned constraints) after `git checkout v<version>`. This ends hand-edited composer.json on the server.
 
 Per-deploy contract:
 

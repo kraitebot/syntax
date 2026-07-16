@@ -14,7 +14,7 @@ Kraite docs span three locations:
 
 | Location | Purpose |
 |---|---|
-| `~/Herd/docs/kraite/` | Functional docs — system overview, features, admin / console specs |
+| `~/Herd/docs/kraite/` | Functional docs — system overview, features, and admin specs |
 | `~/Herd/.credentials/kraite/` | Infrastructure: `servers.json`, `deploy-notes.md` (56+ lessons), `hardening.json`, `credentials` (PATs) |
 | Per repo (`CLAUDE.md`, `WhereAreWe.md`, `CHANGELOG.md`) | Project-level context and current state |
 
@@ -47,7 +47,7 @@ Kraite docs span three locations:
 |---|---|---|
 | hyperion | 135.181.93.226 | Database (MySQL) + Redis |
 | athena | 37.27.243.164 | Ingestion |
-| pheme | 62.238.38.113 | Web (admin, console, kraite.com, syntax) |
+| pheme | 62.238.38.113 | Web (admin, kraite.com, syntax) |
 | eos / iris / nyx / hemera / palaemon / aristaeus | 204.168.137.153 / .138.83 / .129.189 / 77.42.68.254 / 37.27.192.42 / 37.27.196.99 | Workers — positions / orders / priority (interchangeable consumers) |
 | tyche | 204.168.135.246 | Worker — indicators + cronjobs |
 

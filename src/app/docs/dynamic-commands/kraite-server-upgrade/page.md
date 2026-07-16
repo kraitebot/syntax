@@ -4,7 +4,7 @@ title: Kraite — server-upgrade
 
 `kraite-server-upgrade` is the **operator-driven, fully-scripted fleet-wide OS package upgrade**. Cooldown → backup-and-verify → upgrade in dependency order → warmup. Replaces unattended-upgrades, which was disabled fleet-wide on 2026-05-31. {% .lead %}
 
-**Ingestion profile only.** Needs the ingestion app to invoke `php artisan backup:run` and `php artisan kraite:cooldown` against the fleet. The orchestration itself runs from Bruno's Mac using `~/.ssh/id_ed25519_kraite` to reach all 8 boxes — none of the servers run this command on themselves.
+**Ingestion profile only.** Needs the ingestion app to invoke `php artisan backup:run` and `php artisan kraite:cooldown` against the fleet. The orchestration itself runs from Bruno's Mac using `~/.ssh/id_ed25519_kraite` to reach all 10 boxes — none of the servers run this command on themselves.
 
 ---
 
@@ -18,23 +18,24 @@ Standard `apt upgrade` (NOT `dist-upgrade` / `full-upgrade`). Patch + minor vers
 
 ---
 
-## Eight-phase pipeline
+## Nine-phase pipeline
 
 Strict order. Any failure at any phase → fail-fast: pipeline halts, no warmup, fleet left mid-upgrade for operator inspection.
 
 | Phase | Action |
 |---|---|
-| 0. Pre-flight SSH | Probe all 8 hosts in parallel. Any timeout / auth fail / host-key change → STOP, fleet untouched |
+| 0. Pre-flight SSH | Probe all 10 hosts in parallel. Any timeout / auth fail / host-key change → STOP, fleet untouched |
 | 0a. Tool prerequisites | `apt install awscli` on hyperion + athena if missing (needed for Phase 1.5c B2 download) |
 | 0b. Fleet state gate | Refuse if active steps (Running + Dispatched) > 200 — cooldown's 300s drain timeout cannot drain that much |
 | 0c. Credential discovery | Locate `MYSQL_ROOT_PASSWORD`, `BACKUP_ARCHIVE_PASSWORD`, B2 creds, `REDIS_PASSWORD` from `servers.json` and athena `.env` |
-| 1. Cooldown (parallel) | `kraite:cooldown` on athena + 5 workers. Every box must reach `STATUS:COOLED_DOWN`. **No `--force` fallback** |
+| 1. Cooldown | `kraite:cooldown` on athena + 7 workers; put admin and Kraite on pheme in maintenance and stop both Pheme Horizon units |
 | 1.5. Backup + verify | **HARD GATE** before hyperion is touched (see below) |
 | 2. Hyperion upgrade | apt upgrade → optional inline reboot → post-upgrade health (MySQL + Redis active, sentinel queries pass) |
-| 3. Athena upgrade | Stop 4 supervisors + php-fpm → apt → optional reboot → supervisors auto-start → dispatch-daemon must tick within 30s |
-| 4. Workers upgrade (parallel) | All 5 workers in parallel: stop Horizon → apt → optional reboot → restart Horizon |
-| 5. Warmup | Workers in parallel, then athena last (mirrors the post-v1.49.8 ordering) |
-| 6. Cleanup | Drop `kraite_backup_verify` from hyperion, remove temp files |
+| 3. Pheme upgrade | Stop nginx + PHP-FPM + 2 Horizon units → apt → optional reboot → verify Syntax 200 and both PHP maintenance responses |
+| 4. Workers upgrade (parallel) | All 7 workers in parallel: stop Horizon → apt → optional reboot → restart Horizon |
+| 5. Athena upgrade | Stop 4 supervisor units → apt → optional reboot → keep nginx/PHP-FPM masked → verify dispatch-daemon tick |
+| 6. Warmup | Pheme apps, then workers in parallel, then athena last |
+| 7. Cleanup | Drop `kraite_backup_verify` from hyperion, remove temp files |
 
 ---
 
@@ -81,7 +82,7 @@ This catches the failure-mode-shape Bruno hit on 2026-05-31: a 5h dispatch-daemo
 
 ## Auto-reboot inline
 
-When apt flags `/var/run/reboot-required` on any box, the script reboots immediately with `nohup bash -c 'sleep 2; systemctl reboot' >/dev/null 2>&1 &` and exits 100. SSH polling waits up to 120s for it back. Supervisors come up via `autostart=true` (set fleet-wide 2026-05-31); php-fpm starts via systemd.
+When apt flags `/var/run/reboot-required` on any box, the script reboots immediately with `nohup bash -c 'sleep 2; systemctl reboot' >/dev/null 2>&1 &` and exits 100. SSH polling waits up to 120s for it back. Supervisors come up via `autostart=true`; PHP-FPM starts through systemd on Pheme and stays masked on Athena.
 
 ---
 
@@ -106,15 +107,16 @@ When apt flags `/var/run/reboot-required` on any box, the script reboots immedia
 | 1.5e | Schema drift | Partial-dump bug. Inspect `kraite_backup_verify`, salvageable? |
 | 1.5e | Hash mismatch | Writes happened between dump start and compare. Verify WS daemons stopped first |
 | 2 | MySQL won't come up | Critical. `/var/log/mysql/error.log`. B2 pre-upgrade backup is rollback path |
-| 3 | Dispatch daemon doesn't tick in 30s | `/var/log/supervisor/kraite-dispatch-daemon.log`. Often Redis restart killed PhpRedis connection — restart daemon manually + rerun warmup |
+| 3 | Pheme stack fails | Keep apps in maintenance; restore nginx, PHP-FPM, and both Horizon units |
 | 4 | One worker fails apt | Inspect, complete manually, then `/do kraite-warmup` |
-| 5 | Warmup OFFLINE | `/do kraite-warmup <hostname>` — idempotent |
+| 5 | Dispatch daemon doesn't tick in 30s | `/var/log/supervisor/kraite-dispatch-daemon.log`; restart daemon and rerun warmup |
+| 6 | Warmup OFFLINE | `/do kraite-warmup <hostname>` — idempotent |
 
 ---
 
 ## Related
 
 - [Kraite — reboot](/docs/dynamic-commands/kraite-reboot) — what runs implicitly when apt flags `/var/run/reboot-required`
-- [Kraite — warmup](/docs/dynamic-commands/kraite-warmup) — Phase 5 entry point
-- [Kraite — health](/docs/dynamic-commands/kraite-health) — worth running manually after Phase 5 as a fleet smoke check
+- [Kraite — warmup](/docs/dynamic-commands/kraite-warmup) — Phase 6 entry point
+- [Kraite — health](/docs/dynamic-commands/kraite-health) — worth running manually after Phase 6 as a fleet smoke check
 - [Hyperion (database + Redis)](/docs/servers/hyperion) — the highest-risk box this command touches

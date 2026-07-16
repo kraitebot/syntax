@@ -12,23 +12,37 @@ This is the **subsystem lens** view. For the persistent process that replaced on
 
 | Command | Cadence | Cooldown-gated | Purpose |
 |---|---|---|---|
-| `steps:recover-stale` | 1 min | no | Flip stuck Running steps back to Pending after `timeout + 60s` |
+| `kraite:cron-flush-dispatcher-saturation` | 1 min | no | Persist dispatcher saturation counters |
+| `steps:recover-stale` (default + trading) | 1 min | no | Recover stale steps, locks, and stalled groups |
 | `kraite:cron-sync-orders` | 5 min | yes | Polling fallback for the user-data WS daemon |
 | `kraite:cron-refresh-binance-listen-keys` | 1 min | no | Keep Binance listenKeys alive past 60-min auto-expiry |
+| `kraite:cron-check-binance-listen-keys-stale` | 5 min | no | Detect missing or stale listen-key state |
+| `kraite:cron-check-system-health` | 7 min | no | Unified health + maintenance sentinel |
+| `kraite:cron-check-drifts` | 5 min | yes | Position drift, protection, and money guard |
+| `kraite:monitor-narrate` | minutes 7, 27, 47 | yes | Document an already-open money-guard incident |
 | `kraite:cron-create-positions` | 3 min | yes | Open new positions |
 | `kraite:cron-fetch-klines --only-active-positions` | 5 min | yes | Refresh klines for tokens with open positions |
-| `kraite:cron-fetch-klines --timeframe=1h` | hourly :05 | yes | 1h-bar refresh for the full tradeable set |
+| `kraite:cron-fetch-klines --reference-set ... --timeframe=15m` | 15 min | yes | Feed the market-shock reference basket |
 | `kraite:cron-fetch-klines --timeframe=4h` | every 4h :05 | yes | 4h-bar refresh |
+| `kraite:cron-fetch-klines --timeframe=6h` | every 6h :05 | yes | 6h-bar refresh |
 | `kraite:cron-fetch-klines --timeframe=12h` | every 12h :05 | yes | 12h-bar refresh |
 | `kraite:cron-store-accounts-balances` | 5 min | yes | Snapshot account balances per exchange |
+| `kraite:cron-upsert-pnls` | 5 min | yes | Backfill exchange-reported PnL |
 | `kraite:cron-refresh-exchange-symbols` | hourly :15 | yes | Per-symbol leverage-bracket fan-out |
 | `kraite:cron-conclude-symbols-direction` | hourly :30 | yes | TAAPI indicator → direction |
-| `kraite:disable-volatile-tokens` | hourly :45 | yes | System-block non-allow-listed tokens without changing the manual switch |
+| `kraite:cron-renew-subscriptions` | daily 00:00 | yes | Process monthly renewals |
+| `kraite:cron-compute-market-regime` | hourly :50 | yes | Compute BSCS |
+| `kraite:cron-analyse-bscs` | hourly :55 | yes | Apply the BSCS cooldown state machine |
+| `kraite:cron-detect-market-shock` | 1 min | yes | Fast cascade detector |
 | `backup:run --only-db` | every 3h :07 | no | Encrypted database snapshot to B2; two whole-command attempts |
 | `backup:monitor` | every 6h :15 | no | Alert on stale/unhealthy B2 backups |
 | `kraite:purge-candles` | daily 03:00 | yes | Retention sweep on candle data |
-| `kraite:purge-model-logs --duration=30` | daily 03:30 | yes | 30-day rolling audit-log window |
-| `steps:archive --duration=1` | daily 04:00 | yes | Archive completed step rows past 1 day |
+| `kraite:cron-purge-position-trails` | daily 03:20 | yes | Reclaim expired clean-close breadcrumbs |
+| `kraite:cron-purge-failed-backtested-klines` | hourly :00 | yes | Drop rejected-symbol candles |
+| `kraite:purge-old-data ...` | daily 03:30 | yes | API/model log retention |
+| `steps:archive` (default + trading) | daily 04:00 / 04:05 | yes | Archive resolved step trees |
+| `steps:purge --only-archive` (default + trading) | daily 04:30 / 04:35 | yes | Keep five days of archived steps |
+| `kraite:cron-optimize-breadcrumb-tables` | Sundays 03:00–04:36 | yes | Staggered weekly compaction |
 
 The hourly direction-conclusion command also owns an application lock,
 so a manual run and the scheduled run cannot overlap. Its destructive
@@ -39,28 +53,32 @@ the flag before deleting any indicator or direction data.
 
 ## What "cooldown-gated" means
 
-Every cron-bound command in Kraite extends a base class that wraps execution with a per-command cooldown — a "do not re-fire if already running OR if the prior run finished less than `cooldown_seconds` ago" guard. The guard is enforced via a Redis lock, not a DB row, so a stuck previous tick never blocks scheduling. Non-gated commands (the four `no` rows above) are short, idempotent, and safe to overlap.
+`routes/console.php` registers step-producing commands only while the
+Kraite singleton reports `is_cooling_down=false`. During a release those
+entries disappear from the schedule, so they cannot create fresh work while
+queues drain. Recovery, listen-key maintenance, health, and backups stay
+registered. `withoutOverlapping()` is a separate Laravel mutex that prevents
+two instances of one command from running concurrently.
 
 ```
                 tick fires
                     │
                     ▼
-            ┌──────────────────┐
-            │ Cooldown active? │── yes ─► skip
-            └────────┬─────────┘
+            ┌────────────────────┐
+            │ System cooling down?│── yes ─► entry not registered
+            └─────────┬──────────┘
                     no
                     ▼
-            ┌──────────────────┐
-            │  acquire Redis   │── fail ► skip (already running)
-            │      lock        │
-            └────────┬─────────┘
+            ┌────────────────────┐
+            │ withoutOverlapping │── busy ► skip this tick
+            │       mutex        │
+            └─────────┬──────────┘
                     ok
                     ▼
               run command
                     │
                     ▼
-           release lock + stamp
-              cooldown_until
+             release mutex
 ```
 
 ---

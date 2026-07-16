@@ -44,6 +44,12 @@ Every `Place*OrderJob` follows the same idempotent shape:
 
 If the worker crashes between steps 3 and 4, the next retry uses the `clientOrderId` to query the exchange, finds the half-placed order, and adopts it (writes the `exchange_order_id` from the exchange's response). No duplicate.
 
+On Bitget, regular and plan orders carry the account's selected crossed or
+isolated margin mode. Position TP/SL requests identify hedge exposure as long
+or short and one-way exposure as buy or sell. An HTTP-success response counts
+as accepted only when Bitget's vendor envelope also reports success; otherwise
+the order remains unconfirmed and the workflow follows its failure path.
+
 ---
 
 ## The fill path
@@ -101,4 +107,4 @@ A position with 6 LIMIT rungs + 1 TP + 1 SL is 8 orders. If retry semantics live
 - **[Position lifecycle](/docs/lifecycles/position-lifecycle)** — the parent flow that orchestrates these orders
 - **[Orders](/docs/domains/orders)** — the domain rules for each order type
 - **[WebSocket streams](/docs/subsystems/websocket-streams)** — the push path that delivers fill events
-- **[Eos + Iris + Nyx (workers)](/docs/servers/eos-iris)** — where every `Place*OrderJob` actually runs
+- **[Six trading workers](/docs/servers/eos-iris)** — where every `Place*OrderJob` actually runs

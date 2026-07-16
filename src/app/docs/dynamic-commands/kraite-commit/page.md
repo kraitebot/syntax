@@ -31,7 +31,7 @@ The command recurses into [`kraite-profile`](/docs/dynamic-commands/kraite-profi
 | Folder | Path packages? |
 |---|---|
 | `ingestion.kraite.test` | yes (kraitebot/core, brunocfalcao/step-dispatcher) — commit first |
-| `admin.kraite.test` / `console.kraite.test` / `kraite.test` / `syntax.kraite.test` | none — skip the path-package phase |
+| `admin.kraite.test` / `kraite.test` / `syntax.kraite.test` | none — skip the path-package phase |
 
 ---
 

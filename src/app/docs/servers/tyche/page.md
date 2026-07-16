@@ -2,7 +2,9 @@
 title: Tyche (indicators + cronjobs)
 ---
 
-Tyche is Kraite's **isolated worker** — a dedicated CX23 box that runs only the indicator and cronjob Horizon queues. It exists for one reason: the TAAPI throttler waits long enough on the rate-limit window that running it alongside trading work would starve real-time positions and orders. Tyche absorbs that wait so eos, iris, and nyx never have to. {% .lead %}
+Tyche is Kraite's **isolated worker** — a dedicated CX23 box that runs
+indicator, cronjob, priority, and connectivity-probe Horizon queues. It
+exists so TAAPI-bound work never starves the six trading workers. {% .lead %}
 
 This is the **server lens** view. For the indicator math itself, see [Indicators](/docs/domains/indicators).
 
@@ -12,21 +14,27 @@ This is the **server lens** view. For the indicator math itself, see [Indicators
 
 | Queue | Processes | What it consumes |
 |---|---|---|
-| `indicators` | 20 | TAAPI fan-out — per-symbol per-timeframe indicator calculations |
-| `cronjobs` | 20 | Scheduler-triggered work that's safe to run anywhere with DB + Redis |
-| `priority` | 5 | Stale tyche-bound steps promoted by `steps:recover-stale --recover-dispatched`, plus its share of the general priority lane |
-| `tyche` | 5 | Server-pinned connectivity probes (account-onboarding flow) — fan slightly wider here than the rest of the fleet because tyche is the box that drives the heaviest fan-out work |
+| `indicators` | 8 | TAAPI fan-out — per-symbol per-timeframe indicator calculations |
+| `cronjobs` | 6 | Scheduler-triggered fan-out work |
+| `priority` | 3 | Promoted stale work plus Tyche's share of the general priority lane |
+| `tyche` | 2 | Server-pinned connectivity probes during account onboarding |
 
-The 20-process indicator and cronjob pools are the **two largest pools in the fleet** — each bigger than any single trading queue. Indicators fan out hardest (every active symbol × every timeframe × every cron tick), and the throttler turns wall-clock time into a constraint that scales linearly with concurrency. The capacity bump from 10 to 20 on indicators (and 3 to 20 on cronjobs) landed with v1.53.1 once the workload outgrew the original sizing.
+Tyche was right-sized for its 2 vCPU because TAAPI throughput is governed
+by the shared throttle, not raw worker count. The former 20-process
+indicator and cronjob pools pinned CPU without increasing API throughput.
 
-Since 2026-06-07 tyche is no longer the sole `indicators` consumer — athena runs a secondary 10-process pool so the lane has two outbound public IPs (with only tyche's IP it was bursting Bybit's per-IP rate limit, retCode 10006). Tyche stays the primary at 20; `cronjobs` remains tyche-only. The second consumer does not raise the aggregate API rate — the throttlers are global Redis-coordinated buckets — it only spreads the per-IP exchange-call burst and gives StepRouter an IP to rotate to. See [Horizon queues](/docs/subsystems/horizon-queues) for the full rationale.
+Since 2026-06-07 tyche is no longer the sole `indicators` consumer —
+athena runs a 10-process pool so the lane has two outbound public IPs.
+`cronjobs` remains tyche-only. The second consumer spreads per-IP exchange
+calls and gives StepRouter an alternate IP without raising the global API
+budget.
 
 ---
 
 ## Why isolation matters here
 
 {% callout title="Architectural decision" %}
-TAAPI's Expert plan caps requests at 75 per 15-second window. A single Kraite symbol consumes ~12 calculations per query, so the effective ceiling is roughly 6 symbols per second across the whole fleet. During an HH:30 indicator fan-out the throttler routinely makes workers wait 1–2 seconds for the next window slot. If those waiting workers were on eos / iris / nyx (alongside `positions` and `orders`), they'd be holding process slots that real-time trading needs. Moving the entire indicator + cronjob workload onto a dedicated box makes the wait invisible to trading.
+Production admits 65 TAAPI requests per 15-second window with a 200 ms minimum delay. A symbol/timeframe request currently contains seven active indicator constructs. During an HH:30 indicator fan-out the throttler routinely makes consumers wait for the next window slot. Keeping those waits in Tyche's pool and Athena's secondary pool prevents them from occupying the positions/orders process slots on the six trading workers.
 {% /callout %}
 
 The cronjob queue is co-located with indicators because cron-triggered work is the same shape — predictable, fan-out-heavy, latency-tolerant. None of it needs to share a process pool with order placement.
@@ -40,7 +48,12 @@ Trading queues stay off tyche even though its 2 vCPU could in principle run a sm
 ## Why tyche subscribes to `priority`
 
 {% callout title="Architectural decision" %}
-The recovery command `php artisan steps:recover-stale --recover-dispatched` rewrites a stuck step's queue to `priority` so it can be picked up immediately by whichever supervisor wins the race. Before v1.53.1, tyche was not in the priority candidate pool — so a tyche-bound indicator or cronjob step that went stale would land on a trading worker (eos / iris / nyx / hemera / palaemon / aristaeus) that had no business running it. Adding 5 priority procs on tyche means a promoted tyche-bound step has a 1-in-7 chance of landing back home (the pool is the six trading workers plus tyche). The remaining 6-in-7 leak to trading workers is the known imperfection; the tracked fix is a per-category split (`priority-trading` vs `priority-cron`) that pins each consumer to its own lane. Until then this is the best available approximation.
+The recovery command `php artisan steps:recover-stale --recover-dispatched`
+rewrites a stuck step's queue to `priority`. Tyche's 3 priority processes
+keep it in the seven-host candidate pool, so promoted tyche-bound work has
+a 1-in-7 chance of landing back home. The remaining 6-in-7 leak is the
+known imperfection; separate `priority-trading` and `priority-cron` lanes
+remain the tracked full fix.
 {% /callout %}
 
 ---
@@ -56,6 +69,6 @@ Token selection (which depends on fresh indicator output) silently stops finding
 ## Cross-lens links
 
 - **[Indicators](/docs/domains/indicators)** — the actual computation Tyche consumes for
-- **[Athena (ingestion + web)](/docs/servers/athena)** — the box that dispatches into Tyche's queues
-- **[Eos + Iris + Nyx (workers)](/docs/servers/eos-iris)** — the sibling workers Tyche stays out of the way of
+- **[Athena (ingestion)](/docs/servers/athena)** — the box that dispatches into Tyche's queues
+- **[Six trading workers](/docs/servers/eos-iris)** — the sibling workers Tyche stays out of the way of
 - **[Horizon queues](/docs/subsystems/horizon-queues)** — queue assignment, balancing strategies, supervisor config

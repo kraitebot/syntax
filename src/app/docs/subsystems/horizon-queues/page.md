@@ -32,20 +32,30 @@ Worker counts per queue per server. Empty cells mean that server doesn't consume
 | Queue | Athena | Eos | Iris | Nyx | Hemera | Palaemon | Aristaeus | Tyche | Pheme |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | `user-data-stream` | 5 | — | — | — | — | — | — | — | — |
-| `cronjobs` | — | — | — | — | — | — | — | 20 | — |
+| `cronjobs` | — | — | — | — | — | — | — | 6 | — |
 | `positions` | — | 5 | 5 | 5 | 5 | 5 | 5 | — | — |
 | `orders` | — | 8 | 8 | 8 | 8 | 8 | 8 | — | — |
-| `priority` | — | 3 | 3 | 3 | 3 | 3 | 3 | 5 | — |
-| `indicators` | 10 | — | — | — | — | — | — | 20 | — |
+| `priority` | — | 3 | 3 | 3 | 3 | 3 | 3 | 3 | — |
+| `indicators` | 10 | — | — | — | — | — | — | 8 | — |
 | `pheme-web` | — | — | — | — | — | — | — | — | 2 |
-| `<hostname>` | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 5 | 1 |
+| `<hostname>` | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 2 | 1 |
 
-Fleet-wide process total: **171** — athena 16, eos 17, iris 17, nyx 17, hemera 17, palaemon 17, aristaeus 17, tyche 50, pheme 3. Horizon workers open MySQL + Redis connections per-job rather than each holding two for life, so connection pressure is far lower than the process count implies: hyperion runs `max_connections = 512`, and the historical peak (`Max_used_connections`) across the full active fleet is 88. The athena indicators pool (added 2026-06-07) lifts that peak by ~20 — ample headroom remains.
+Fleet-wide process total: **140** — athena 16, six trading workers at
+17 each, tyche 19, and pheme 3. Hyperion runs
+`max_connections = 512`; the verified production peak is 94.
 
-Eos, Iris, Nyx, Hemera, Palaemon, and Aristaeus are deliberately identical — interchangeable Horizon consumers competing on the same queues, with no per-account-to-box binding by design; the six distinct public IPs spread Binance's per-IP weight budget naturally as dispatched jobs distribute. Tyche carries the bulk of `indicators` (20 processes) and athena runs a secondary 10-process pool (added 2026-06-07). A second consumer does **not** raise the aggregate API rate: both the TAAPI throttler (`taapi_throttler`) and the per-exchange throttlers (e.g. `bybit_throttler`) are single global buckets coordinated through the shared hyperion Redis and keyed *without* the caller's IP, so they cap fleet-wide request volume regardless of how many boxes consume the lane. What the second box buys is two outbound public IPs on `indicators`: StepRouter spreads the per-IP exchange kline burst (the trigger behind Bybit's retCode 10006) across athena's and tyche's IPs, and can route the lane off whichever IP catches a temporary rate-limit ban. Pheme is the only consumer of `pheme-web` because that queue is the web stack's own private background-job lane — the web apps dispatch into it over Redis (`QUEUE_CONNECTION=redis`, per-app Horizon supervisors on pheme), and pheme drains it without ever touching the StepRouter candidate pool.
+Eos, Iris, Nyx, Hemera, Palaemon, and Aristaeus are identical,
+interchangeable consumers. Athena carries 10 `indicators` processes and
+tyche carries 8. Two consumers do **not** raise the aggregate API rate;
+global Redis-coordinated throttlers cap fleet-wide volume. They provide two
+outbound IPs and rotation away from a temporarily limited IP. Pheme alone
+consumes `pheme-web` for admin and kraite.com background jobs.
 
 {% callout title="Why tyche subscribes to `priority`" %}
-Tyche carries 5 processes on the `priority` queue since v1.53.1. Reason: stale tyche-bound steps promoted by `php artisan steps:recover-stale --recover-dispatched` get their queue rewritten to `priority`, and without a tyche subscription every promoted step would leak to a trading worker that has no business running an indicator or cronjob payload. The current scheme picks the priority candidate at random across the 7-supervisor pool (eos + iris + nyx + hemera + palaemon + aristaeus + tyche), so tyche-bound work still leaks 6/7 of the time. The tracked fix is a per-category split — `priority-trading` vs `priority-cron` — that pins each consumer to its own lane. Until then the leak is the known imperfection of the priority queue.
+Tyche carries 3 `priority` processes. Promoted stale work selects among
+seven hostname candidates (six trading workers + tyche), so tyche-bound
+work still leaks 6/7 of the time. Separate `priority-trading` and
+`priority-cron` lanes remain the tracked full fix.
 {% /callout %}
 
 ---
@@ -55,7 +65,11 @@ Tyche carries 5 processes on the `priority` queue since v1.53.1. Reason: stale t
 {% callout title="Architectural decision" %}
 Athena is the ingestion brain — it owns the scheduler, the dispatch daemon, both WebSocket daemons, and (historically) the public web vhosts. Its primary Horizon pool (`user-data-stream`, 5 processes) drains the push frames produced by the Binance user-data daemon running on the same box, so the frame-to-job-execution path stays inside one machine. The trading queues (positions / orders / priority) stay off athena entirely — a slow exchange round-trip must never compete with the scheduler or dispatch daemon for CPU.
 
-The `indicators` pool (10 processes, added 2026-06-07) is the deliberate exception. Kline-fetch jobs on that lane were bursting Bybit's per-IP rate limit (retCode 10006) because tyche was the lane's only outbound IP. Adding athena as a second consumer gives StepRouter a second public IP to spread the burst across and to rotate to when one IP catches a temporary ban. It is safe to host here precisely because athena runs no trading queues — the isolation rule is "indicators never share a box with positions/orders," and athena honours it. The pool is sized at 10 (vs tyche's 20) so it can't starve the dispatch daemon on athena's 4 cores; the global throttlers cap the aggregate API rate regardless, so the extra processes cut queue wait without raising request volume. The previous fleet's "athena holds a small self-sufficiency footprint on every queue" pattern was retired with the 2026-05-24 fleet rebuild.
+The `indicators` pool (10 processes, added 2026-06-07) is the deliberate
+exception. It gives StepRouter a second public IP for the lane while athena
+still carries no trading queues. Tyche was later right-sized to 8 indicator
+processes because the global throttle, not process count, controls API
+throughput.
 {% /callout %}
 
 ---
@@ -94,7 +108,7 @@ while indicators has enough headroom for its normal hourly burst.
 
 - **[Dispatch daemon](/docs/subsystems/dispatch-daemon)** — what feeds these queues
 - **[Hyperion (database + Redis)](/docs/servers/hyperion)** — the box that hosts the Redis every consumer reads from
-- **[Athena (ingestion + web)](/docs/servers/athena)** — the user-data-stream consumer + every other dispatcher
+- **[Athena (ingestion)](/docs/servers/athena)** — the user-data-stream consumer + every other dispatcher
 - **[Eos + Iris + Nyx + Hemera + Palaemon + Aristaeus (workers)](/docs/servers/eos-iris)** — the bulk position / order / priority workers
 - **[Tyche (indicators + cronjobs)](/docs/servers/tyche)** — the isolated indicator + cronjob worker
 - **[Pheme (web)](/docs/servers/pheme)** — the web stack and its private `pheme-web` background-job lane

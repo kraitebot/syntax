@@ -19,5 +19,5 @@ The **lifecycle lens** answers "what's the full flow from start to finish?" Life
 ## Cross-lens entry points
 
 - **[Subsystems](/docs/subsystems/dispatch-daemon)** — *what* machinery executes each step (the daemon dispatches, the queues consume).
-- **[Servers](/docs/servers/architecture-overview)** — *where* each step physically runs (mostly Apollo / Ares for execution, Athena for dispatch).
+- **[Servers](/docs/servers/architecture-overview)** — *where* each step physically runs (six interchangeable trading workers for execution, Athena for dispatch).
 - **[Business domains](/docs/domains/open-positions)** — *what* each step changes (position state, order state, indicator readouts).

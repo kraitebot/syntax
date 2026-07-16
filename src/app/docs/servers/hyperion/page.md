@@ -2,7 +2,7 @@
 title: Hyperion (database + Redis)
 ---
 
-Hyperion is Kraite's **stateful core** — one dedicated AMD-EPYC box that runs only MySQL and Redis. Every other server in the fleet (athena for ingestion + web, eos / iris / nyx for trading workers, tyche for indicators) reads and writes against this single shared backend over the private `kraite-net` network. Hyperion runs no Laravel code, no Horizon, no daemons; it does two storage jobs and gets out of the way. {% .lead %}
+Hyperion is Kraite's **stateful core** — one dedicated AMD-EPYC box that runs only MySQL and Redis. Athena, pheme, the six trading workers, and tyche all read and write against this shared backend over the private `kraite-net` network. Hyperion runs no Laravel code, no Horizon, no daemons; it does two storage jobs and gets out of the way. {% .lead %}
 
 This is the **server lens** view. For application-level data shapes, see the [Domains](/docs/domains/open-positions) chapters.
 
@@ -48,7 +48,7 @@ The MySQL config has been moved away from stock defaults wherever the workload d
 | `innodb_flush_log_at_trx_commit` | `2` | Trades up to one second of crash-window for substantial commit throughput. Acceptable because every position-changing flow is idempotent on `exchange_order_id` and re-runnable from exchange state. |
 | `innodb_log_buffer_size` | `32M` | Reduces flushing pressure on the large transactions step-block writes generate (many child rows in one commit). |
 | `skip-log-bin` | enabled | Kraite has no replication; binlogs would be pure overhead. |
-| `max_connections` | `256` | Sized for the fleet-wide ~162 sustained worker connections plus admin / console ad-hoc queries. Stock `151` was too tight. |
+| `max_connections` | `512` | Raised above the stock `151` for the nine Horizon hosts plus web/daemon bursts. Production's verified peak is 94 connections. |
 
 ---
 
@@ -74,7 +74,10 @@ The whole-command layer was added after B2 returned a transient
 `InternalError` on one multipart part on 2026-07-14 even though the
 database dump and archive were healthy.
 
-The **migration-ownership rule** (documented in the operator runbook): only `ingestion.kraite.com` runs migrations against Hyperion. Admin and the public site read this schema; they never alter it.
+The **migration-ownership rule** concerns files: every shared-schema
+migration lives in `kraitebot/core`. Release workflows may invoke
+`php artisan migrate --force` from ingestion, admin, or kraite.com; the
+shared migration table makes already-applied core migrations idempotent.
 
 ---
 
@@ -94,6 +97,6 @@ The decision to keep one shared MySQL instance instead of read replicas is a del
 ## Cross-lens links
 
 - **[Architecture overview](/docs/servers/architecture-overview)** — the full topology Hyperion anchors
-- **[Athena (ingestion + web)](/docs/servers/athena)** — runs the application that owns migrations against Hyperion
+- **[Athena (ingestion)](/docs/servers/athena)** — runs the scheduler and trading runtime against Hyperion
 - **[Horizon queues](/docs/subsystems/horizon-queues)** — the queue surface that lives in Hyperion's Redis
 - **[Open positions](/docs/domains/open-positions)** — the dominant write workload Hyperion serves

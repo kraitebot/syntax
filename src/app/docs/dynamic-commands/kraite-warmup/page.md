@@ -33,7 +33,7 @@ Before warming athena, the command verifies all seven workers (eos, iris, nyx, h
 | 3. PHP-FPM | `systemctl reload php8.5-fpm` (clear opcache) |
 | 4. Log cleanup | Wipe stale `laravel*.log`, `horizon.log`, `price-stream.log`, `user-data-stream.log`, `dispatch-daemon.log`, supervisor `*.log` |
 | 5. Warmup command | `php artisan kraite:warmup` (resumes step dispatchers on ingestion, runs `artisan up`) |
-| 6. Supervisor | `supervisorctl start all` on athena (Horizon + dispatch daemon + WS streams); `supervisorctl start horizon` on workers |
+| 6. Supervisor | Start athena's four named units (`kraite-horizon`, dispatch daemon, and both WS streams); start `kraite-horizon` on workers |
 | 7. Scheduler cron (athena ONLY) | Install `/etc/cron.d/kraite-scheduler` — `* * * * * athena cd /home/athena/ingestion.kraite.com && php artisan schedule:run` |
 | 8. Dispatch monitor (athena ONLY, 1 min) | Verify daemon created + completed steps in the last minute, no failed steps, no pile-up |
 | 9. Final verify | `supervisorctl status`, `php artisan schedule:list | head -5` |
@@ -46,9 +46,9 @@ On fresh infrastructure, do NOT install the scheduler cron until positions and o
 
 ## Web profiles
 
-**admin / console (web-app-with-queue):** permissions → PHP-FPM reload → conditional Horizon restart (the `pheme-web` supervisor is currently DEFERRED; admin/console run `QUEUE_CONNECTION=sync` until it lands, so `horizon:terminate` is a no-op until a supervisor block exists) → `artisan up` → curl https check.
+**admin (web-app-with-queue):** permissions → PHP-FPM reload → `horizon:terminate` → verify `kraite-horizon-admin` respawned and is consuming Redis queue `pheme-web` → `artisan up` → curl HTTPS check.
 
-**kraite (web-app):** same as admin/console minus the Horizon step (no queue worker on the landing site).
+**kraite (web-app):** permissions → PHP-FPM reload → `horizon:terminate` → verify `kraite-horizon-kraite` respawned on Redis queue `pheme-web` → `artisan up` → curl HTTPS check.
 
 **syntax (static-site):** no-op. The Next.js `npm run build` already wrote the new `out/` folder; nginx on pheme serves it directly. Files are live immediately after deploy. The command only runs the URL probe.
 

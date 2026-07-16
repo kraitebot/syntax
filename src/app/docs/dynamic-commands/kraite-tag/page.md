@@ -13,7 +13,7 @@ The flow shape (analyse → push → tag main project) is the same across profil
 | Folder | Profile | Path packages? | Docs phase? | CI gate? |
 |---|---|---|---|---|
 | `ingestion.kraite.test` | ingestion | yes (kraitebot/core + brunocfalcao/step-dispatcher) | yes (full) | yes (mandatory) |
-| `admin.kraite.test` / `console.kraite.test` / `kraite.test` | web-app(-with-queue) | none | no | no |
+| `admin.kraite.test` / `kraite.test` | web-app(-with-queue) | none | no | no |
 | `syntax.kraite.test` | static-site | none | no | no |
 
 ---

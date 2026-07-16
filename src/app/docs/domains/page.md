@@ -12,7 +12,7 @@ The **business-domain lens** answers "what is this business object and what stat
 
 {% quick-link title="Accounts" icon="plugins" href="/docs/domains/accounts" description="One row per (user, exchange). Credentials, position-mode flag, can_trade toggle. The unit of credential isolation — only Binance accounts query TAAPI; others receive direction by copy." /%}
 
-{% quick-link title="Indicators" icon="theming" href="/docs/domains/indicators" description="Twelve TAAPI indicators per symbol per timeframe (1h / 4h / 12h). The throttler-bound input layer that feeds the signal-to-direction lifecycle." /%}
+{% quick-link title="Indicators" icon="theming" href="/docs/domains/indicators" description="Seven active TAAPI indicators per symbol and evaluated timeframe. The throttler-bound input layer that feeds the progressive signal-to-direction lifecycle." /%}
 
 {% quick-link title="Token selection" icon="lightbulb" href="/docs/domains/token-selection" description="Which symbol fills a freed slot. Four selection priorities (override / fast-track / BTC-bias / fallback), log-compressed scoring, stability + diversification + S/R proximity multipliers." /%}
 
@@ -23,5 +23,5 @@ The **business-domain lens** answers "what is this business object and what stat
 ## Cross-lens entry points
 
 - **[Subsystems](/docs/subsystems/dispatch-daemon)** — *what* runs the workflows that change domain state (the daemon, the queues, the streams).
-- **[Servers](/docs/servers/architecture-overview)** — *where* each domain's data lives (everything on Zeus) and where its workflows execute.
+- **[Servers](/docs/servers/architecture-overview)** — *where* each domain's data lives (MySQL on Hyperion) and where its workflows execute.
 - **[Lifecycles](/docs/lifecycles/position-lifecycle)** — *how* a domain object moves through its states end-to-end.

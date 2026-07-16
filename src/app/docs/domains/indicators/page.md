@@ -2,7 +2,7 @@
 title: Indicators
 ---
 
-Indicators are the **per-symbol per-timeframe technical readouts** Kraite uses to conclude a trading direction. Twelve indicators are computed per symbol per timeframe, sourced from TAAPI on the Expert plan. The indicator domain owns the math, the storage, and the freshness semantics; the [signal → direction lifecycle](/docs/lifecycles/signal-direction) owns how those readouts collapse into a `LONG` / `SHORT` / `none` decision. {% .lead %}
+Indicators are the **per-symbol per-timeframe technical readouts** Kraite uses to conclude a trading direction. Production currently has seven active conclude indicators per evaluated timeframe: five directional checks and two validation gates. The indicator domain owns the data and freshness semantics; the [signal → direction lifecycle](/docs/lifecycles/signal-direction) owns the progressive `LONG` / `SHORT` / no-direction decision. {% .lead %}
 
 This is the **business-domain lens** view. For the throttler that gates TAAPI calls, see the cross-link footer.
 
@@ -10,16 +10,11 @@ This is the **business-domain lens** view. For the throttler that gates TAAPI ca
 
 ## The active timeframe set
 
-The active timeframe list is `["1h", "4h", "12h"]`. Each symbol gets the full 12-indicator set computed at each of those three timeframes — 36 readouts per symbol per refresh cycle.
+The production Kraite singleton currently stores `["1h", "4h", "12h", "1d"]`. A symbol starts at `1h`; only an inconclusive result advances it to `4h`, then `12h`, then `1d`. It therefore consumes seven readouts when the first timeframe concludes and at most 28 when all four timeframes are exhausted.
 
-Two timeframes were dropped from the original `[5m, 1h, 4h, 12h, 1d]` set:
-
-| Timeframe | Why dropped |
-|---|---|
-| `5m` | Too noisy for direction conclusion — a 5m flip rarely survives the next 1h confirm |
-| `1d` | Redundant with `12h + 4h` anchors — adds latency to direction-stale recovery without adding signal |
-
-Seeder and factory both use the new set; nothing in the codebase still references `5m` or `1d` for direction.
+{% callout type="warning" title="Known timeframe configuration drift" %}
+The migration that introduced `6h` intended `["4h", "6h", "12h", "1d"]`, while the current production row and seeder still contain `1h` instead of `6h`. Separately, full-universe kline refreshes are scheduled for `4h`, `6h`, and `12h`, with a `15m` reference-set refresh. This page records verified runtime state; it does not choose which list is the intended product rule.
+{% /callout %}
 
 ---
 
@@ -45,7 +40,7 @@ Both indicator consumers share **one** throttle bucket (cache key `taapi_throttl
 ## Why batched Query is not on the table
 
 {% callout title="Architectural decision" %}
-TAAPI's bulk Query endpoint accepts multiple symbols in one POST, but a 20-calculation cap applies **per request**. One Kraite symbol already eats 12 calculations (12 indicators); only 0.66 of a second symbol fits in the leftover budget. Batching becomes meaningful only on a higher TAAPI plan or with a reduced indicator set. Until either changes, the throttler keeps requests serialised one-symbol-per-call with the per-window cap as the sole pacing mechanism.
+The old no-batching decision assumed 12 active indicator constructs per symbol. Production now has seven, so that arithmetic no longer supports the conclusion. The current job still sends one symbol for one timeframe per request; batching is an open optimisation decision rather than a proven plan-limit impossibility.
 {% /callout %}
 
 ---
@@ -56,7 +51,7 @@ Indicator computation is dispatched by the scheduler:
 
 | Command | Cadence | What it does |
 |---|---|---|
-| `kraite:cron-conclude-symbols-direction` | hourly :30 | TAAPI indicator pipeline — fetches the 12 indicators per symbol per timeframe, persists, runs the direction conclusion |
+| `kraite:cron-conclude-symbols-direction` | hourly :30 | Starts each Binance symbol at the first configured timeframe; inconclusive symbols progress through the remaining timeframes |
 
 Direction conclusion is a downstream concern — see [Signal → direction](/docs/lifecycles/signal-direction).
 
@@ -70,6 +65,6 @@ A single direction conclusion is shared across exchanges via `CopyDirectionToOth
 
 ## Cross-lens links
 
-- **[Signal → direction](/docs/lifecycles/signal-direction)** — how the 36 readouts collapse into a direction
+- **[Signal → direction](/docs/lifecycles/signal-direction)** — how seven readouts at a time progressively conclude a direction
 - **[Token selection](/docs/domains/token-selection)** — uses the per-timeframe correlation + elasticity readouts in the score
-- **[Artemis](/docs/servers/architecture-overview)** — the dedicated worker box that consumes the `indicators` Horizon queue
+- **[Athena and Tyche](/docs/subsystems/horizon-queues)** — the two hosts that consume the `indicators` Horizon queue

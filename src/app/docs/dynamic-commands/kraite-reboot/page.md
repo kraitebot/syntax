@@ -39,9 +39,10 @@ Every host follows the same five phases. Only Phase 2 and Phase 6 differ per rol
 
 | Host | Blast radius | Key risk |
 |---|---|---|
-| **athena** | Whole trading loop pauses. No step advances anywhere. **User-data WS events from every exchange are LOST during the window — exchanges do NOT replay on listenKey reconnect.** TP fills, SL fills, partials, cancels, balance changes during the reboot are invisible to ingestion. | Local DB view of positions/orders may diverge from exchange. MANDATORY REST reconcile in Phase 6 |
-| **pheme** | 4 public sites 5xx through Cloudflare for ~60s | Zero trading impact |
-| **workers** (eos / iris / nyx / hemera / palaemon / aristaeus / tyche) | Fleet drops to 5-of-6 capacity per queue while one is down | Other workers absorb the load |
+| **athena** | Whole trading loop pauses. No newly pending step is promoted. **Binance user-data WS events are LOST during the window — Binance does not replay them on listenKey reconnect.** | Local DB view of Binance positions/orders may diverge. MANDATORY REST reconcile in Phase 6 |
+| **pheme** | 3 public sites 5xx through Cloudflare for ~60s | Zero trading impact |
+| **trading workers** (eos / iris / nyx / hemera / palaemon / aristaeus) | Shared positions/orders/priority capacity drops from six hosts to five | Other trading workers absorb the load |
+| **tyche** | Primary cronjob pool and one indicator consumer disappear; athena keeps the indicator lane partly available | Cronjob capacity is unavailable until tyche returns |
 | **hyperion** | **Highest in the fleet.** Every app disconnects, every queue stops consuming. | Every consumer must be cooled before, warmed after |
 
 ---
@@ -49,7 +50,7 @@ Every host follows the same five phases. Only Phase 2 and Phase 6 differ per rol
 ## Athena: the lost-events problem
 
 {% callout type="warning" title="User-data WS events are lost during the reboot window" %}
-Binance / Bitget / KuCoin / Bybit do NOT replay user-data events on listenKey reconnect. Any TP fill, SL fill, partial, cancel, or balance change that happens between cooldown and warmup is invisible to ingestion until a REST reconcile catches up.
+The supervised push daemon currently consumes Binance user-data streams. Binance does not replay those events on listenKey reconnect. Any TP fill, SL fill, partial, cancel, or balance change that happens between cooldown and warmup is invisible to ingestion until a REST reconcile catches up.
 
 Phase 6 on athena therefore runs `kraite:cron-sync-positions` + `kraite:cron-sync-orders` immediately after `kraite:warmup`, then sanity-checks that REST-reported open-positions per account match `positions WHERE status IN ("opened","new","active")`. Any divergence → STOP, flag the account IDs to Bruno before letting the dispatcher run any close / cancel / place workflow.
 
@@ -63,11 +64,11 @@ Without this reconcile, a TP fill that happened during the reboot leaves the loc
 Hyperion has no Laravel project — only MySQL and Redis. The cool-down work happens on every **consumer** before hyperion is touched:
 
 1. Ingestion fleet (athena + 7 workers) full cooldown in parallel
-2. Pheme web apps (admin / console / kraite.com) `php artisan down --retry=60`
+2. Pheme web apps (admin / kraite.com) `php artisan down --retry=60`
 
 Phase 4 on hyperion ALSO probes MySQL TCP (3306) and Redis TCP (6379) accepting connections — not just SSH — before declaring hyperion back. The server can SSH-in before mysqld or Redis has finished initialising.
 
-Phase 6 brings consumers back in reverse dependency order: pheme web apps first (operator sees site up before trading is fully restored), then athena's `kraite:warmup`, then the 7 workers in parallel.
+Phase 6 brings consumers back in dependency order: pheme web apps first, then the 7 workers in parallel, then athena last. Restoring athena's scheduler only after consumers are ready avoids queue buildup during recovery.
 
 ---
 
