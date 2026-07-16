@@ -15,7 +15,7 @@ This is the **business-domain lens** view. For where account credentials are rea
 | `user_id` | Owner |
 | `api_system_id` | Which exchange (Binance / Bybit / KuCoin / Bitget) |
 | `api_key` / `secret` / (optional `passphrase`) | Encrypted credentials — Laravel encrypted casts |
-| `can_trade` | Master enable / disable. False = read-only — no order will ever be placed |
+| `can_trade` | Account-level permission for opening new positions |
 | `position_mode` | One-way (single net position per symbol) OR Hedge / Dual (LONG and SHORT positions per symbol coexist) |
 | `quote_currency` | The settlement asset — USDT or USDC for Bitget futures |
 
@@ -32,19 +32,44 @@ cannot silently query or trade the wrong Bitget wallet.
 
 ---
 
-## The `can_trade` invariant
+## Trading readiness
 
-`can_trade=false` is enforced at multiple layers:
+Opening a new position requires every account, user, billing, and plan gate:
 
 ```
-   ┌──────────────────────────────────────────────────┐
-   │  cron-create-positions   → skips can_trade=false │
-   │  DispatchPositionJob     → guards on entry       │
-   │  Place*OrderJob          → guards before HTTP    │
-   └──────────────────────────────────────────────────┘
+account active + can trade
+user active + can trade
+subscription active
+designated account when the plan allows only one
 ```
 
-At the time of writing, only one account is `can_trade=true` (Bruno's Binance). Every other seeded account is read-only — the system fetches balances and indicators for them but will never place an order. This makes onboarding a new user a deliberate, two-stage process: seed first (read-only), promote later (after operator review).
+Existing positions continue through protection, synchronization, WAP, and
+close when a subscription lapses or opening is switched off. Those gates stop
+new exposure; they do not abandon exposure that already exists.
+
+## Registration and connectivity
+
+Public registration accepts Binance and Bitget. Bitget credentials include a
+mandatory passphrase, and registration reads both its USDT and USDC futures
+wallets before showing the quote choice. A registration trial starts with a
+renewal anchor, preventing a completed trial from becoming permanently
+unrenewable.
+
+The account screen tests credentials from every eligible Kraite server before
+applying them. It reports connection health separately from final trading
+readiness. A successful retest may reactivate an account that the engine
+stopped after every safe route was blocked, and clears only that account's
+connectivity bans.
+
+Portfolio and trading quotes cannot change while the account has open
+positions or while opening remains enabled. Other settings remain editable,
+and stopping new openings never interrupts management of current positions.
+
+{% callout type="warning" title="Connection is not trading permission" %}
+A full-fleet connectivity pass proves that API traffic can reach the exchange.
+The account, user, subscription, and designated-account gates still decide
+whether Kraite may open a new position.
+{% /callout %}
 
 ---
 

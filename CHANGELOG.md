@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.5] — 2026-07-17
+
+### Account behavior refresh
+
+- [IMPROVED] The account domain now documents Bitget registration, dual-product
+  wallet reads, full-fleet connectivity recovery, subscription-aware trading
+  readiness, and safe quote locking around open exposure.
+
 ## [0.3.4] — 2026-07-16
 
 ### Alert behavior refresh
