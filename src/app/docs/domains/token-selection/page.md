@@ -15,11 +15,17 @@ Before any score is computed, one of four priorities is chosen:
 | Priority | When it runs | Uses scoring? |
 |---|---|---|
 | **Override** | Operator pinned a specific symbol → slot | No — bypasses scoring entirely |
-| **Fast-track** | A recently-closed winning trade is showing fresh signal — re-enter same symbol fast | Skips correlation / elasticity checks |
+| **Fast-track** | Recent quick `closed` position | No |
 | **BTC-bias** | Default. Direction-bias mode where wrong-sign-correlation candidates are hard-rejected | Yes (with hard sign filter pre-score) |
 | **Fallback** | BTC-bias produced no candidate | Yes (no sign filter — accept either direction's correlation) |
 
-Only **BTC-bias** and **fallback** use the scoring formula below. Override and fast-track route around it.
+Only **BTC-bias** and **fallback** use the scoring formula below. Override and
+fast-track route around it.
+
+Fast-track accepts only the clean `closed` outcome. `cancelled` means the
+opening or cleanup path exited without completing the intended trade, while
+`failed` means exchange cleanup could not be proved. Neither outcome is valid
+evidence for bypassing normal scoring on the next position slot.
 
 ---
 

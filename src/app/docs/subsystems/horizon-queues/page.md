@@ -47,9 +47,12 @@ Fleet-wide process total: **140** — athena 16, six trading workers at
 Eos, Iris, Nyx, Hemera, Palaemon, and Aristaeus are identical,
 interchangeable consumers. Athena carries 10 `indicators` processes and
 tyche carries 8. Two consumers do **not** raise the aggregate API rate;
-global Redis-coordinated throttlers cap fleet-wide volume. They provide two
-outbound IPs and rotation away from a temporarily limited IP. Pheme alone
-consumes `pheme-web` for admin and kraite.com background jobs.
+Redis-coordinated throttlers cap fleet-wide volume. Bitget reserves a slot
+for every real HTTP attempt: public traffic is scoped by source IP, signed
+traffic by API key, and each endpoint uses its own exchange limit tier.
+Internal retries reserve again and are re-signed after waiting. The workers
+therefore add execution capacity without bypassing Bitget's limits. Pheme
+alone consumes `pheme-web` for admin and kraite.com background jobs.
 
 {% callout title="Why tyche subscribes to `priority`" %}
 Tyche carries 3 `priority` processes. Promoted stale work selects among

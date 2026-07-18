@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.7] — 2026-07-18
+
+### Trading behavior refresh
+
+- [IMPROVED] Token-selection and Horizon chapters now document closed-only
+  fast-track history and Bitget's endpoint-, IP-, and API-key-scoped request
+  pacing.
+
 ## [0.3.5] — 2026-07-17
 
 ### Account behavior refresh
