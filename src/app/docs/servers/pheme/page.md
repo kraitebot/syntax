@@ -2,7 +2,10 @@
 title: Pheme (web)
 ---
 
-Pheme is Kraite's **dedicated web host** — the box that serves every public surface (admin, kraite.com, syntax) and nothing else. It does no exchange execution, no scheduler work, no step routing. It exists so that web traffic and trading runtime can fail independently. {% .lead %}
+Pheme is Kraite's **dedicated web host** — the box that serves every public web
+surface and the planned mobile API boundary, and nothing else. It does no
+exchange execution, scheduler work, or step routing. Public traffic and the
+trading runtime can therefore fail independently. {% .lead %}
 
 This is the **server lens** view. For the box that creates the trading steps pheme reads from the DB, see [athena](/docs/servers/athena).
 
@@ -13,6 +16,7 @@ This is the **server lens** view. For the box that creates the trading steps phe
 | Vhost | Notes |
 |---|---|
 | `admin.kraite.com` | Operator UI — Laravel app reading from the shared `kraite` DB on hyperion |
+| `api.kraite.com` | Approved mobile REST hostname, not live yet — served by the same admin Laravel codebase, not a new service |
 | `kraite.com` | Public marketing site (with `www.kraite.com` canonicalising to apex) |
 | `syntax.kraite.com` | Public docs site (this site) — Next.js static export, no PHP |
 
@@ -32,6 +36,29 @@ fleet-config `pheme` block.
 Admin and kraite.com carry `REDIS_QUEUE=pheme-web` in their `.env`
 (since 2026-06-05), so the queue they dispatch to is the same physical
 `pheme-web` their Horizon consumes.
+
+## Mobile API boundary
+
+The approved request path is:
+
+```
+kraite.app → api.kraite.com/v1 → admin Laravel app → hyperion
+```
+
+The API hostname keeps JSON routes separate from the browser UI while reusing
+the admin application's trader identity, account ownership, and dashboard data
+semantics. It does not add another checkout, Horizon supervisor, database, or
+server role.
+
+The full client, authentication, ownership, refresh, and abuse-resistance
+contract is canonical in the
+[architecture overview](/docs/servers/architecture-overview#mobile-and-api-path).
+
+{% callout type="warning" title="Implementation pending" %}
+No mobile REST routes or public API vhost exist yet. This is the approved
+boundary the implementation must satisfy, not a claim that the surface is
+already live.
+{% /callout %}
 
 ---
 
