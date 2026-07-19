@@ -52,6 +52,16 @@ plan orders inherit the account's crossed or isolated margin mode. The
 combined protection call identifies hedge positions as long or short and
 one-way positions as buy or sell.
 
+Before any Bitget opening mutation, `SyncPositionModeJob` reads the live mode
+for the selected futures product. Hedge orders then use buy or sell together
+with open or close intent; one-way closing orders use reduce-only intent. The
+V2 placement flow omits `posSide` in both modes.
+
+`PlacePositionTpslJob` persists the TP and SL identities before sending the
+combined request. Retries reconstruct those same orders, match returned IDs by
+client identity, and avoid duplicate protection. A position read remains only
+as compatibility fallback when Bitget omits those IDs.
+
 Every Bitget round-trip carries the stablecoin product selected by the
 account or exchange symbol. USDT uses `USDT-FUTURES` with USDT margin; USDC
 uses `USDC-FUTURES` with USDC margin. This context follows the entire

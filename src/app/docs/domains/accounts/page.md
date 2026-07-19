@@ -55,6 +55,12 @@ wallets before showing the quote choice. A registration trial starts with a
 renewal anchor, preventing a completed trial from becoming permanently
 unrenewable.
 
+The wizard shows the minimum read and futures-trading permissions for the
+selected exchange and tells users to leave withdrawals and transfers off.
+Every eligible fleet server verifies connectivity and confirms that withdrawal
+permission is disabled. Registration cannot activate the account when
+withdrawals are enabled or the permission cannot be verified.
+
 The account screen tests credentials from every eligible Kraite server before
 applying them. It reports connection health separately from final trading
 readiness. A successful retest may reactivate an account that the engine

@@ -48,11 +48,14 @@ Eos, Iris, Nyx, Hemera, Palaemon, and Aristaeus are identical,
 interchangeable consumers. Athena carries 10 `indicators` processes and
 tyche carries 8. Two consumers do **not** raise the aggregate API rate;
 Redis-coordinated throttlers cap fleet-wide volume. Bitget reserves a slot
-for every real HTTP attempt: public traffic is scoped by source IP, signed
-traffic by API key, and each endpoint uses its own exchange limit tier.
-Internal retries reserve again and are re-signed after waiting. The workers
-therefore add execution capacity without bypassing Bitget's limits. Pheme
-alone consumes `pheme-web` for admin and kraite.com background jobs.
+for every real HTTP attempt: public traffic is scoped by source IP, while
+signed traffic uses both API-key and server-shared private endpoint budgets.
+All traffic also shares Bitget's 6,000-request-per-minute source-IP ceiling.
+Internal retries reserve again and are re-signed after waiting. A 429 pauses
+that server's Bitget traffic for five minutes unless Bitget asks for longer.
+The workers therefore add execution capacity without bypassing Bitget's
+limits. Pheme alone consumes `pheme-web` for admin and kraite.com background
+jobs.
 
 {% callout title="Why tyche subscribes to `priority`" %}
 Tyche carries 3 `priority` processes. Promoted stale work selects among

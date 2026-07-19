@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.8] — 2026-07-19
+
+### Bitget opening and onboarding safety
+
+- [IMPROVED] Position, account, and Horizon chapters now document live Bitget
+  position-mode synchronization, retry-safe protection, shared request limits,
+  and withdrawal-disabled registration.
+
 ## [0.3.7] — 2026-07-18
 
 ### Trading behavior refresh
