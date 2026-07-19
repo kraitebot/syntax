@@ -14,7 +14,7 @@ This is the **server lens** index. Each box has its own canonical chapter; this 
 |---|---|---|---|
 | **Hyperion** | Database (MySQL 8.4.8) + Redis (8.0.5) | — | [Hyperion](/docs/servers/hyperion) |
 | **Athena** | Ingestion (scheduler, dispatch daemon, WS streams, user-data + indicators Horizon) | `athena` | [Athena](/docs/servers/athena) |
-| **Pheme** | Web (admin, planned mobile API, kraite.com, syntax) — nginx + php8.5-fpm | `pheme` (two app-specific supervisors) | [Pheme](/docs/servers/pheme) |
+| **Pheme** | Web (admin, mobile API, kraite.com, syntax) — nginx + php8.5-fpm | `pheme` (two app-specific supervisors) | [Pheme](/docs/servers/pheme) |
 | **Eos** | Trading worker — positions / orders / priority | `eos` | [Eos + Iris + Nyx + Hemera + Palaemon + Aristaeus](/docs/servers/eos-iris) |
 | **Iris** | Trading worker — positions / orders / priority | `iris` | [Eos + Iris + Nyx + Hemera + Palaemon + Aristaeus](/docs/servers/eos-iris) |
 | **Nyx** | Trading worker — positions / orders / priority | `nyx` | [Eos + Iris + Nyx + Hemera + Palaemon + Aristaeus](/docs/servers/eos-iris) |
@@ -61,8 +61,7 @@ Redis and MySQL both live on Hyperion (the dedicated AMD-EPYC box). The seven wo
 
 ## Mobile and API path
 
-The native iPhone client and its API boundary were approved before
-implementation on 2026-07-19:
+The native iPhone client's API boundary was implemented on 2026-07-19:
 
 ```
 kraite.app → api.kraite.com/v1 → admin Laravel app on Pheme → Hyperion
@@ -73,12 +72,12 @@ codebase, not a new project. The mobile app is UI only. Athena and the worker
 fleet remain private trading machinery and never receive public mobile
 requests.
 
-{% callout type="warning" title="Approved boundary, not live yet" %}
-The mobile project is still pre-scaffold and the API routes do not exist yet.
-Implementation must preserve a read-only, trader-owned surface: revocable
-first-party tokens, strict account isolation, bounded dashboard responses,
-foreground-only polling, and throttling at both the edge and application.
-Endpoint secrecy is not a control; the design assumes every route is known.
+{% callout title="Read-only first release" %}
+Password login issues a revocable 30-day device token carrying only dashboard
+read access. The API exposes account switching, KPIs, and open positions. It
+cannot trade, edit accounts, control the engine, or access another trader's
+accounts. Responses are bounded, throttled, and briefly cached. Endpoint
+secrecy is not a control; the design assumes every route is known.
 {% /callout %}
 
 ---
@@ -97,7 +96,7 @@ The fleet is split along **what blocks what**. Stateful storage (Hyperion) is on
 |---|---|
 | **Hyperion** | Total system halt. Every app reads/writes MySQL here; every queue lives in Redis here. The recovery path is operational (B2 restore + DNS swap), not architectural. |
 | **Athena** | Scheduler + dispatch daemon + WS push paths. Workers on eos / iris / nyx / hemera / palaemon / aristaeus / tyche continue draining what's already enqueued; nothing new gets dispatched until athena is back. Pheme (web) is **unaffected** — operator UI keeps serving. |
-| **Pheme** | The three current public vhosts, plus `api.kraite.com` once launched, return 5xx through Cloudflare for the duration. Trading is unaffected — athena, workers, and hyperion all stay online. Smallest non-trivial blast radius in the fleet. |
+| **Pheme** | All four public vhosts return 5xx through Cloudflare for the duration. Trading is unaffected — athena, workers, and hyperion all stay online. Smallest non-trivial blast radius in the fleet. |
 | **Eos** OR **Iris** OR **Nyx** OR **Hemera** OR **Palaemon** OR **Aristaeus** | Capacity drops to five-sixths on `positions` / `orders` / `priority`. The surviving workers absorb all account ranges (the partition is in the data model, not the queue) until the dead box returns. |
 | **Two of the six trading workers** | Capacity drops to two-thirds. Trading continues at degraded throughput; surviving workers handle every account range. |
 | **All six trading workers** | Position state machines stall mid-flight. Trading freezes; existing exchange-side orders continue per their own logic. |

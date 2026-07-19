@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.9] — 2026-07-19
+
+### Mobile API implementation
+
+- [IMPROVED] Architecture and Pheme chapters now document the live read-only
+  mobile API, revocable device tokens, trader-owned account data, throttling,
+  and bounded cached dashboard responses.
+
 ## [0.3.8] — 2026-07-19
 
 ### Bitget opening and onboarding safety
