@@ -80,8 +80,20 @@ A regime snapshot has a freshness budget (`freshnessMaxSeconds`, default 6900 s 
 
 ---
 
+## Trader visibility
+
+The iPhone dashboard exposes the same global regime truth as one bounded,
+read-only KPI tile: score, band, block state, freshness, status, and configured
+block threshold. The visual scale runs continuously from Calm through Critical
+and marks both the current score and block threshold. Sub-signal composition
+and cooldown internals remain operator-only; the trader needs the actionable
+portfolio-risk posture, not the diagnostic machinery behind it.
+
+---
+
 ## Cross-lens links
 
 - **[Position lifecycle](/docs/lifecycles/position-lifecycle)** — open phase reads `shouldBlockOpens()` before dispatching
 - **[Open positions](/docs/domains/open-positions)** — the domain whose creation is gated by this subsystem
 - **[Components catalog](/docs/components-catalog)** — `BlackSwanIndex` is the public façade in `kraitebot/core`
+- **[Pheme](/docs/servers/pheme)** — serves the bounded mobile regime summary

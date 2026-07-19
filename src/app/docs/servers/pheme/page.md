@@ -56,9 +56,9 @@ contract is canonical in the
 
 {% callout title="Read-only mobile boundary" %}
 Password login issues a revocable 30-day device token. The only protected
-surface returns the authenticated trader's account list, KPIs, and open
-positions. Trading, account edits, billing, sysadmin operations, connectivity
-tests, and engine controls are not exposed.
+surface returns the authenticated trader's account list, KPIs, compact BSCS
+regime summary, and open positions. Trading, account edits, billing, sysadmin
+operations, connectivity tests, and engine controls are not exposed.
 {% /callout %}
 
 ---

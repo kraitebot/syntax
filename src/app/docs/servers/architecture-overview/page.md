@@ -74,10 +74,13 @@ requests.
 
 {% callout title="Read-only first release" %}
 Password login issues a revocable 30-day device token carrying only dashboard
-read access. The API exposes account switching, KPIs, and open positions. It
-cannot trade, edit accounts, control the engine, or access another trader's
-accounts. Responses are bounded, throttled, and briefly cached. Endpoint
-secrecy is not a control; the design assumes every route is known.
+read access. The API exposes account switching, KPIs, a compact BSCS regime
+summary, and open positions. The BSCS summary carries the score, band, block
+state, freshness, status, and threshold without exposing sub-signal or cooldown
+internals. It cannot trade, edit accounts, control the engine, or access
+another trader's accounts. Responses are bounded, throttled, and briefly
+cached. Endpoint secrecy is not a control; the design assumes every route is
+known.
 {% /callout %}
 
 ---
