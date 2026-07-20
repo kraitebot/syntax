@@ -30,8 +30,14 @@ title: Kraite — deploy
 
 The full-stop between phases is intentional. Either the whole fleet is on the OLD tag (before Phase 3) or the whole fleet is on the NEW tag (after Phase 3). No moment where athena dispatches new-code jobs to workers still on old code.
 
+Cooldown pauses both dispatcher prefixes, then waits for executable leaf steps
+in either prefix. A waiting workflow parent with a populated child tree is not
+an API call and does not block shutdown; any active descendant leaf still does.
+This prevents the pause itself from deadlocking thousands of resumable parent
+workflows while preserving the hard gate around real trading work.
+
 {% callout title="Why workers warm before athena" %}
-With the current 10-box fleet, athena no longer holds a self-sufficiency footprint on positions / orders / priority queues. Its Horizon pools are `user-data-stream` (5), `indicators` (10), and the athena connectivity probe (1). Workers MUST be the first consumers up. The instant `/etc/cron.d/kraite-scheduler` is restored on athena and the first cron tick fires, dispatched jobs flow straight to workers without piling up in Redis.
+With the current 10-box fleet, athena no longer holds a self-sufficiency footprint on positions / orders / priority queues. Its Horizon pools are `user-data-stream` (5), `indicators` (16), and the athena connectivity probe (1). Workers MUST be the first consumers up. The instant `/etc/cron.d/kraite-scheduler` is restored on athena and the first cron tick fires, dispatched jobs flow straight to workers without piling up in Redis.
 
 **Historical note (incident 2026-05-24, v1.49.8 release):** the previous flow was athena-first, workers-second. Warming athena resumed the scheduler before workers were deployed, which filled the worker queue (1298 pending) and tripped `deploy.sh`'s `STATUS:COOLED_DOWN` hard gate on each worker. The release only completed via a sed-stripped `deploy-force.sh` that bypassed the cooldown check, plus the `FORCE_DEPLOY=1` env-var bypass added to `deploy.sh` afterwards. The flow above is the structural fix.
 {% /callout %}

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1] — 2026-07-20
+
+### Deployment safety
+
+- [FIXED] Deploy docs define leaf-only dual-prefix cooldown draining and the
+  current Athena indicator pool of 16 processes.
+
 ## [0.5.0] — 2026-07-20
 
 ### Trading and operations reference
