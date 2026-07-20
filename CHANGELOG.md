@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.2] — 2026-07-20
+
+### Fleet documentation
+
+- [FIXED] Athena topology pages now match the deployed 16-process indicator
+  pool instead of the former 10-process setting.
+
 ## [0.5.1] — 2026-07-20
 
 ### Deployment safety

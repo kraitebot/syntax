@@ -51,7 +51,7 @@ The post-v1.49.8 release ordering: deploy ALL boxes first (no mixed-code window)
 | `positions` | — | 5 each | — |
 | `orders` | — | 8 each | — |
 | `priority` | — | 3 each | — |
-| `indicators` | 10 | — | 8 |
+| `indicators` | 16 | — | 8 |
 | `cronjobs` | — | — | 6 |
 | `<hostname>` (connectivity probe) | 1 | 1 each | 2 |
 

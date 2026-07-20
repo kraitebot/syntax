@@ -24,7 +24,7 @@ by the shared throttle, not raw worker count. The former 20-process
 indicator and cronjob pools pinned CPU without increasing API throughput.
 
 Since 2026-06-07 tyche is no longer the sole `indicators` consumer —
-athena runs a 10-process pool so the lane has two outbound public IPs.
+athena runs a 16-process pool so the lane has two outbound public IPs.
 `cronjobs` remains tyche-only. The second consumer spreads per-IP exchange
 calls and gives StepRouter an alternate IP without raising the global API
 budget.
@@ -60,7 +60,7 @@ remain the tracked full fix.
 
 ## Failure isolation
 
-A tyche crash stops cronjob execution and slows — but no longer stops — indicator computation: since 2026-06-07 athena's secondary 10-process `indicators` pool keeps the lane partially draining, so throughput drops rather than halting. `cronjobs` is tyche-only, so scheduled fan-out work does accumulate in Redis until tyche returns. Existing positions are unaffected — trading continues on eos / iris / nyx / hemera / palaemon / aristaeus from the data they already have.
+A tyche crash stops cronjob execution and slows — but no longer stops — indicator computation: athena's secondary 16-process `indicators` pool keeps the lane partially draining, so throughput drops rather than halting. `cronjobs` is tyche-only, so scheduled fan-out work does accumulate in Redis until tyche returns. Existing positions are unaffected — trading continues on eos / iris / nyx / hemera / palaemon / aristaeus from the data they already have.
 
 Token selection (which depends on fresh indicator output) silently stops finding new candidates while tyche is offline. The system continues to operate on existing positions; it just stops opening new ones.
 

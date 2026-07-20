@@ -23,7 +23,7 @@ For the public web surface (admin / kraite.com / syntax), see
 | `kraite:stream-binance-prices` | Long-running daemon — `!markPrice@arr@1s` subscription; refreshes `exchange_symbols.mark_price` for every Binance-listed symbol |
 | `kraite:cron-refresh-binance-listen-keys` | Per-minute cron — keeps each Binance listenKey alive past its 60-min auto-expiry |
 | Horizon — `user-data-stream` pool | 5 processes. Drains push frames produced by the user-data WebSocket daemon. |
-| Horizon — `indicators` pool | 10 processes (added 2026-06-07). A second outbound IP for the kline/indicator lane — spreads the per-IP Bybit kline burst (retCode 10006) across athena + tyche and lets StepRouter rotate off a rate-limited IP. Safe here because athena runs no trading queues. |
+| Horizon — `indicators` pool | 16 processes (added with 10 on 2026-06-07, raised to 16 on 2026-07-20). A second outbound IP for the kline/indicator lane — spreads the per-IP Bybit kline burst (retCode 10006) across athena + tyche and lets StepRouter rotate off a rate-limited IP. Safe here because athena runs no trading queues. |
 
 ### What does NOT run here (since 2026-06-01)
 
