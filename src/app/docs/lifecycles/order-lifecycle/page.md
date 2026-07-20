@@ -98,6 +98,31 @@ REST-only absence uses the same opening-order selector but not the same timing. 
 
 ---
 
+## Polling reconciliation
+
+The five-minute fallback polls only exchange-backed working orders: `NEW` and
+`PARTIALLY_FILLED`. `FILLED`, `CANCELLED`, `EXPIRED`, and `REJECTED` are final
+local facts and never return to the polling lane. This keeps exchange traffic
+focused on orders whose state can still change and avoids treating a vendor's
+short terminal-order retention as a live failure.
+
+Every signed network attempt receives fresh authentication. If an exchange
+asks the client to retry after a delay, Kraite rebuilds the timestamp and
+signature immediately before the retry instead of reusing credentials that
+may already be outside the receive window. This applies consistently across
+Binance, Bitget, Bybit, and KuCoin.
+
+{% callout type="warning" title="Why terminal orders stop here" %}
+On 2026-07-20, the old structural filter kept polling a cancelled Binance
+order after Binance had removed it from live lookup. The internal retry waited
+10 seconds and reused the original signature, hiding the useful not-found
+response behind a receive-window error. Terminal status filtering removes the
+pointless request; fresh retry authentication preserves the real error when a
+working order genuinely needs reconciliation.
+{% /callout %}
+
+---
+
 ## Why orders carry their own anchor
 
 {% callout title="Architectural decision" %}

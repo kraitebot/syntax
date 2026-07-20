@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.3] — 2026-07-20
+
+### Order synchronization reference
+
+- [IMPROVED] Position and order lifecycle chapters document working-only
+  polling and fresh authentication for every signed retry.
+
 ## [0.5.2] — 2026-07-20
 
 ### Fleet documentation

@@ -211,6 +211,13 @@ is a no-op. Active/opening positions with no syncable orders and syncs
 where every exchange query fails remain failed attempts, keeping retry
 and alerting active.
 
+Only working orders (`NEW` or `PARTIALLY_FILLED`) are eligible for polling.
+Once a local order is terminal, its exchange state cannot change and the
+exchange may stop returning it from live-order lookup. The 2026-07-20 incident
+repeatedly queried a cancelled Binance order until the retry authentication
+expired. Kraite now excludes terminal rows and regenerates signed-request
+timestamps and signatures immediately before every network attempt.
+
 ---
 
 ## WAP (Weighted Average Price)
