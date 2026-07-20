@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.0] — 2026-07-20
+
+### Trading and operations reference
+
+- [IMPROVED] Account and lifecycle chapters document Binance one-way/hedge and
+  Bitget Classic/Unified one-way/hedge compatibility without changing Kraite's
+  one-position-per-symbol strategy.
+- [IMPROVED] Dispatcher, scheduler, indicators, and Horizon chapters document
+  replay-safe recovery, atomic child workflows, six-hour bracket sweeps,
+  priority connectivity, stale-copy suppression, and Athena's 16-worker pool.
+- [IMPROVED] Open-position docs show the lifecycle rail ending at stop-loss.
+
 ## [0.3.9] — 2026-07-19
 
 ### Mobile API implementation

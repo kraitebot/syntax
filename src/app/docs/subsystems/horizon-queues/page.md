@@ -36,16 +36,16 @@ Worker counts per queue per server. Empty cells mean that server doesn't consume
 | `positions` | — | 5 | 5 | 5 | 5 | 5 | 5 | — | — |
 | `orders` | — | 8 | 8 | 8 | 8 | 8 | 8 | — | — |
 | `priority` | — | 3 | 3 | 3 | 3 | 3 | 3 | 3 | — |
-| `indicators` | 10 | — | — | — | — | — | — | 8 | — |
+| `indicators` | 16 | — | — | — | — | — | — | 8 | — |
 | `pheme-web` | — | — | — | — | — | — | — | — | 2 |
 | `<hostname>` | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 2 | 1 |
 
-Fleet-wide process total: **140** — athena 16, six trading workers at
+Fleet-wide process total: **146** — athena 22, six trading workers at
 17 each, tyche 19, and pheme 3. Hyperion runs
 `max_connections = 512`; the verified production peak is 94.
 
 Eos, Iris, Nyx, Hemera, Palaemon, and Aristaeus are identical,
-interchangeable consumers. Athena carries 10 `indicators` processes and
+interchangeable consumers. Athena carries 16 `indicators` processes and
 tyche carries 8. Two consumers do **not** raise the aggregate API rate;
 Redis-coordinated throttlers cap fleet-wide volume. Bitget reserves a slot
 for every real HTTP attempt: public traffic is scoped by source IP, while
@@ -71,11 +71,13 @@ work still leaks 6/7 of the time. Separate `priority-trading` and
 {% callout title="Architectural decision" %}
 Athena is the ingestion brain — it owns the scheduler, the dispatch daemon, both WebSocket daemons, and (historically) the public web vhosts. Its primary Horizon pool (`user-data-stream`, 5 processes) drains the push frames produced by the Binance user-data daemon running on the same box, so the frame-to-job-execution path stays inside one machine. The trading queues (positions / orders / priority) stay off athena entirely — a slow exchange round-trip must never compete with the scheduler or dispatch daemon for CPU.
 
-The `indicators` pool (10 processes, added 2026-06-07) is the deliberate
+The `indicators` pool (16 processes, expanded 2026-07-20) is the deliberate
 exception. It gives StepRouter a second public IP for the lane while athena
 still carries no trading queues. Tyche was later right-sized to 8 indicator
 processes because the global throttle, not process count, controls API
-throughput.
+throughput. Athena's extra consumers provide processing margin for real
+rate-limited work; scheduler tick regularity remains a post-release health
+gate.
 {% /callout %}
 
 ---

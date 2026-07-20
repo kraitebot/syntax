@@ -28,7 +28,8 @@ This is the **subsystem lens** view. For the persistent process that replaced on
 | `kraite:cron-fetch-klines --timeframe=12h` | every 12h :05 | yes | 12h-bar refresh |
 | `kraite:cron-store-accounts-balances` | 5 min | yes | Snapshot account balances per exchange |
 | `kraite:cron-upsert-pnls` | 5 min | yes | Backfill exchange-reported PnL |
-| `kraite:cron-refresh-exchange-symbols` | hourly :15 | yes | Per-symbol leverage-bracket fan-out |
+| `kraite:cron-refresh-exchange-symbols` | hourly :15 except 00/06/12/18 | yes | Refresh catalogues without leverage-bracket work |
+| `kraite:cron-refresh-exchange-symbols --with-brackets` | every 6h :15 | yes | Refresh catalogues and all leverage brackets |
 | `kraite:cron-conclude-symbols-direction` | hourly :30 | yes | TAAPI indicator → direction |
 | `kraite:cron-renew-subscriptions` | daily 00:00 | yes | Process monthly renewals |
 | `kraite:cron-compute-market-regime` | hourly :50 | yes | Compute BSCS |
@@ -48,6 +49,11 @@ The hourly direction-conclusion command also owns an application lock,
 so a manual run and the scheduled run cannot overlap. Its destructive
 `--clean` mode is accepted only in local or testing; production refuses
 the flag before deleting any indicator or direction data.
+
+The split symbol schedule keeps catalogue, token, and availability data fresh
+every hour without sending a full per-symbol leverage sweep into the cron lane
+each time. The six-hour run is explicit and manually reproducible; normal
+hourly runs create zero leverage-bracket steps.
 
 ---
 
@@ -113,6 +119,10 @@ workflows were visibly executing. Both alerts described old timestamps, but
 neither needed operator action. The recovery rule removes those races without
 creating a general post-deploy blind spot.
 {% /callout %}
+
+Copied exchange symbols also defer to their fresh Binance source. A delayed
+copy is not paged while the same token and quote has fresh native analysis;
+when the Binance source is stale, the source alert remains visible.
 
 ---
 

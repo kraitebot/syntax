@@ -67,6 +67,11 @@ old abandoned steps do not suppress the alert.
 After deployment, Athena also gives this dispatcher-derived signal a bounded
 10-minute recovery grace. Other health surfaces remain active throughout.
 
+A copied Bitget, Bybit, or KuCoin row is not separately reported stale while
+the matching Binance token and quote has a fresh native result. If the source
+is stale, Binance still alerts, so copy-lag suppression cannot hide a real
+analysis outage.
+
 ---
 
 ## Why only Binance accounts query TAAPI

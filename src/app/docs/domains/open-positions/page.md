@@ -2,7 +2,10 @@
 title: Open positions
 ---
 
-A **Position** is the central business object Kraite manages. One row per attempt to enter the market on a given `(account_id, exchange_symbol_id, direction)` tuple. The row carries the position from selection to close (or to failure) and is the single source of truth that reconciles against the exchange. {% .lead %}
+A **Position** is the central business object Kraite manages. One row
+represents one attempt to enter the market for an account and exchange symbol.
+The row carries the position from selection to close and is the source of
+truth that reconciles against the exchange. {% .lead %}
 
 This is the **business-domain lens** view. For the step-by-step flow that drives every transition, jump to [position lifecycle](/docs/lifecycles/position-lifecycle).
 
@@ -33,7 +36,9 @@ The product allows only one bot-owned position per account and trading pair, reg
 
 1. **Selection-level** — locally-open positions, exchange position snapshots, exchange open-order snapshots, and symbols already selected in the current batch are removed before either LONG or SHORT assignment.
 2. **Pre-entry exchange check** — `VerifyTradingPairNotOpenJob` blocks the pair when any `LONG`, `SHORT`, or one-way `BOTH` position key exists, independent of the requested slot direction.
-3. **DB-level** — virtual `is_open` is `1` for non-terminal statuses and `NULL` otherwise. Unique index `ux_positions_open_slot` rejects a second non-terminal row with the same `(account_id, exchange_symbol_id, direction)` tuple. This remains a final direction-aware storage guard beneath the stronger pair-level product rule.
+3. **DB-level** — virtual `is_open` is `1` for non-terminal statuses and
+   `NULL` otherwise. The unique index rejects a second non-terminal row with
+   the same account and exchange symbol, regardless of direction.
 4. **Orchestrator-level** — parent election and child creation commit together under a parent-row lock. A retry sees the populated child block and becomes a no-op instead of appending another opening chain.
 
 All layers are intentional: selection prevents bad intent, the exchange check catches stale local state, the DB rejects duplicate storage, and orchestration prevents retry duplication.
@@ -49,6 +54,10 @@ Each account carries `total_positions_long` and `total_positions_short` integers
 ## Exchange-truth safety
 
 Position existence is matched by exact symbol and logical direction. Hedge `LONG` / `SHORT` rows remain directional; one-way `BOTH` rows derive direction from signed quantity. A same-symbol opposite-side row therefore cannot stand in for the bot-owned exposure.
+
+Bitget Classic and Unified responses are normalized into the same position
+shape. If an external hedge account contains both sides of one pair, recovery
+rejects the whole pair instead of adopting one side and risking the other.
 
 Before a REST response can drive replacement, WAP, quantity sync, drift follow-up, or recovery, its vendor envelope and normalized rows must validate. HTTP success with an exchange error is unknown state, not an empty account.
 

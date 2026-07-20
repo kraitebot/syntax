@@ -36,7 +36,14 @@ The daemon doesn't *know* about position semantics — it dispatches the block a
 
 - **Single-process execution** — no two scheduler ticks ever race on the same workload, eliminating the duplicate-block class of bugs that motivated the rewrite
 - **Step-level retry semantics** — failed atomics route through `resolve-exception` rather than crashing the daemon
-- **Orchestrator idempotency hooks** — `compute()` short-circuits on retry if any child step already exists in the block (the position-open flow uses this directly via `PreparePositionsOpeningJob`)
+- **Atomic child ownership** — the parent pointer and complete child set become
+  visible together. A retry sees the populated block and becomes a no-op.
+- **Safe stale recovery** — populated parent trees never rerun, including when
+  all children are terminal. A genuinely empty child block remains repairable.
+- **Bounded scans** — dispatch and recovery inspect actionable failures and
+  children instead of repeatedly walking settled history.
+- **Queue ownership** — high-priority work keeps a valid explicit server queue;
+  only missing or invalid queues fall back to the priority lane.
 - **Survives Horizon restarts** — daemon and Horizon are independent supervisors; restarting workers on eos / iris / nyx / hemera / palaemon / aristaeus / tyche does not interrupt the dispatch loop on Athena
 
 ---
@@ -48,6 +55,11 @@ When no work exists the daemon idles on a short sleep instead of ticking. The id
 {% callout type="warning" title="Why not the activation flag files (incident 2026-06-05)" %}
 The dispatcher framework keeps per-prefix activation flag files, touched whenever a step is created. The daemon originally gated its whole loop on the **default-prefix flag only** — so the moment default-prefix work drained, the daemon slept with trading steps still pending. Trading ladders crawled at one index hop per minute, woken only when the next scheduler cron recreated the flag. The flags are also per-machine: a child step created on a worker box touches the worker's filesystem, never Athena's — useless as a fleet-wide signal. The shared DB is correct on both axes, which is why the daemon's gate reads it directly. Caught during the first live trading smoke test; fixed in core v1.51.4.
 {% /callout %}
+
+User-facing connectivity probes use this routing deliberately. The root takes
+the priority fast-pass, every server child retains its exact worker queue, and
+the complete child fan-out commits atomically. Registration therefore cannot
+wait on a partial probe tree.
 
 ---
 

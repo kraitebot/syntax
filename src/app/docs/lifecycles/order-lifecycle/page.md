@@ -50,6 +50,10 @@ or short and one-way exposure as buy or sell. An HTTP-success response counts
 as accepted only when Bitget's vendor envelope also reports success; otherwise
 the order remains unconfirmed and the workflow follows its failure path.
 
+Classic accounts use the v2 order surface and Unified accounts use v3. Kraite
+normalizes both regular and strategy orders before sync, correction, or
+recovery. Deterministic client identities survive retries on both surfaces.
+
 ---
 
 ## The fill path

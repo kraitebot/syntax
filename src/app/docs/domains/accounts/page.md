@@ -16,7 +16,7 @@ This is the **business-domain lens** view. For where account credentials are rea
 | `api_system_id` | Which exchange (Binance / Bybit / KuCoin / Bitget) |
 | `api_key` / `secret` / (optional `passphrase`) | Encrypted credentials — Laravel encrypted casts |
 | `can_trade` | Account-level permission for opening new positions |
-| `position_mode` | One-way (single net position per symbol) OR Hedge / Dual (LONG and SHORT positions per symbol coexist) |
+| `position_mode` | Exchange API mode: one-way or hedge. Kraite still owns at most one direction per trading pair |
 | `quote_currency` | The settlement asset — USDT or USDC for Bitget futures |
 
 The `(user_id, api_system_id)` pair is unique. A user has at most one account per exchange.
@@ -39,15 +39,15 @@ established v2 API, unified (UTA) accounts must speak the v3 API — no
 compatibility layer exists on the exchange side. Kraite detects each
 account's mode automatically on first private contact (a cheap classic
 probe that unified accounts reject with a distinctive pre-authentication
-error) and caches the answer on the account. All private reads — balance,
-positions, open orders, key permissions — then route to the correct API
-generation transparently.
+error) and caches the answer on the account. All private reads and writes then
+route to the correct generation. Classic accounts use v2; Unified accounts use
+v3 for balances, positions, orders, strategy orders, fills, leverage,
+modification, cancellation, and close.
 
-{% callout type="warning" title="Unified accounts register, but do not trade yet" %}
-The order lifecycle still speaks the classic API only. A unified Bitget
-account passes registration, connectivity, and every read path, but the
-trading-readiness gate refuses it until the v3 order surface ships. Classic
-accounts trade exactly as before.
+{% callout title="All supported Bitget account combinations can trade" %}
+Classic and Unified accounts support both one-way and hedge exchange modes.
+The mode changes Bitget's request and response fields only. Kraite never opens
+simultaneous LONG and SHORT positions on one pair.
 {% /callout %}
 
 Unified API keys carry two scopes: trading (read/write) and management
@@ -137,7 +137,13 @@ whether Kraite may open a new position.
 ## Position mode
 
 {% callout title="Architectural decision" %}
-The position-mode flag (one-way vs hedge) is stored at the account level, not the position level, because the exchange enforces it at account level. Switching position mode while positions are open is rejected by every exchange we support. Kraite mirrors that constraint in the domain: changing `position_mode` requires zero open positions for that account, and the orchestration framework refuses to dispatch a hedge-mode-specific flow against a one-way-mode account (and vice versa). See `02-features/dual-position-mode.md` for the operator playbook.
+The position-mode flag is stored at account level because the exchange applies
+it to the account. Kraite reads the live mode before money-changing Bitget
+work and aligns stale local state. Binance mismatch responses trigger the same
+safe correction and retry. The trading rule remains pair-level: an account
+cannot have two Kraite positions on the same exchange symbol, regardless of
+direction or exchange mode. See `02-features/dual-position-mode.md` in the raw
+docs for the full contract.
 {% /callout %}
 
 ---

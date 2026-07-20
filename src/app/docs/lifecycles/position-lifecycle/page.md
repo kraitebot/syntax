@@ -53,9 +53,9 @@ combined protection call identifies hedge positions as long or short and
 one-way positions as buy or sell.
 
 Before any Bitget opening mutation, `SyncPositionModeJob` reads the live mode
-for the selected futures product. Hedge orders then use buy or sell together
-with open or close intent; one-way closing orders use reduce-only intent. The
-V2 placement flow omits `posSide` in both modes.
+for the selected futures product. Hedge orders identify the relevant side;
+one-way closing orders use reduce-only intent. Classic accounts use Bitget v2
+and Unified accounts use v3, with both normalized into the same lifecycle.
 
 `PlacePositionTpslJob` persists the TP and SL identities before sending the
 combined request. Retries reconstruct those same orders, match returned IDs by
@@ -73,6 +73,10 @@ Bitget's HTTP status alone is not exchange truth. A placement or account read
 advances only when the vendor envelope reports success. A non-success or
 malformed envelope fails before response mapping, including after a retry, so
 it cannot activate a position or masquerade as an empty account snapshot.
+
+The same lifecycle supports Binance one-way and hedge accounts. Exchange mode
+changes API fields and response parsing, never the pair-level rule: Kraite
+does not open a LONG and SHORT together on one symbol.
 
 {% callout type="warning" title="SL-before-TP invariant (2026-04-23 PM)" %}
 Earlier on 2026-04-23 we hit realised losses on fast-trade tokens (LAB #107, BSB #109, LAB #121) where the TP LIMIT filled within milliseconds of the market entry, then the follow-up SL placement arrived at Binance after the position was already closed. Binance rejected with `-4509 "Time in Force GTE can only be used with open positions"`. The cascade ran `CancelPositionJob`, the forced MARKET-CANCEL closed the position at a worse price than entry.
