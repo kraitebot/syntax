@@ -32,6 +32,61 @@ cannot silently query or trade the wrong Bitget wallet.
 
 ---
 
+### Bitget account modes — classic vs unified
+
+Bitget locks its API surface by account mode: classic accounts speak the
+established v2 API, unified (UTA) accounts must speak the v3 API — no
+compatibility layer exists on the exchange side. Kraite detects each
+account's mode automatically on first private contact (a cheap classic
+probe that unified accounts reject with a distinctive pre-authentication
+error) and caches the answer on the account. All private reads — balance,
+positions, open orders, key permissions — then route to the correct API
+generation transparently.
+
+{% callout type="warning" title="Unified accounts register, but do not trade yet" %}
+The order lifecycle still speaks the classic API only. A unified Bitget
+account passes registration, connectivity, and every read path, but the
+trading-readiness gate refuses it until the v3 order surface ships. Classic
+accounts trade exactly as before.
+{% /callout %}
+
+Unified API keys carry two scopes: trading (read/write) and management
+(read-only). Management-read powers balance reads, so trader keys need both
+— the registration checklist names the exact toggles per account type. The
+withdrawal-safety check fail-closes on any scope outside the known-safe
+pair.
+
+## Own-activity protection
+
+A trader may keep their own positions and orders on the same exchange
+account Kraite trades. Two per-account flags (`allow_other_positions`,
+`allow_other_orders`) always move together and are **evidence-driven** —
+nobody flips them by hand:
+
+| Evidence | Effect |
+|---|---|
+| User activity present on the exchange | Both flags ON: cleanup ignores unknown positions, cancels only provable Kraite leftovers (match-window keys), sizing forced onto **available balance** |
+| No user activity, reliable tick | Both flags OFF: Kraite-exclusive cleanup and configured sizing basis return |
+
+Three writers keep the flags aligned: the registration scan at wizard
+completion, the system-health watchdog every five minutes (live exchange
+query, before any cleanup decision), and the position-opening chain (fresh
+snapshots, before sizing). Protection may tighten on any evidence; it only
+loosens on a reliable tick. A standing user **limit order counts as
+positions scope** — once it fills it becomes a position Kraite must never
+touch. The Binance ghost-algo scrub is skipped entirely on shared accounts,
+and Kraite refuses to open on any symbol where the exchange already shows a
+position or order.
+
+{% callout type="note" title="Why evidence-driven (2026-07-20)" %}
+The flags were originally written once, at registration. A user who started
+trading manually afterwards had their positions auto-closed as "orphans" by
+the cleanup watchdog within minutes. The audit that caught this also found
+the reverse leak: flags stuck ON forever kept sizing on available balance
+after the user's positions were long gone. Canonical spec:
+`02-features/own-activity-protection.md` in the raw docs.
+{% /callout %}
+
 ## Trading readiness
 
 Opening a new position requires every account, user, billing, and plan gate:
