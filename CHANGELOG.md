@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.7.1] — 2026-07-21
+
+### Unified trading and registration reference
+
+- [IMPROVED] Market-regime and position chapters describe the shared BSCS
+  decision boundary, effective account caps, and closed-only mobile timeline.
+- [IMPROVED] Account and architecture chapters document worker-routed
+  registration reads and fail-closed activity inspection.
+
 ## [0.7.0] — 2026-07-21
 
 ### Registration messaging and indicator pacing

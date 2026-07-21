@@ -129,6 +129,12 @@ Every eligible fleet server verifies connectivity and confirms that withdrawal
 permission is disabled. Registration cannot activate the account when
 withdrawals are enabled or the permission cannot be verified.
 
+Balance discovery and the final existing-trade inspection run as
+high-priority work on the trading fleet, not as exchange calls from Pheme. The
+wizard waits for the session-bound result before continuing. A failed read is
+never treated as an empty account, and a whitelist rejection names the exact
+worker IP the trader must add before retrying.
+
 The account screen tests credentials from every eligible Kraite server before
 applying them. It reports connection health separately from final trading
 readiness. A successful retest may reactivate an account that the engine

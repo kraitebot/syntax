@@ -47,7 +47,16 @@ All layers are intentional: selection prevents bad intent, the exchange check ca
 
 ## Slot caps
 
-Each account carries `total_positions_long` and `total_positions_short` integers. The selection phase will not assign a position to a slot above the cap, even when the symbol-override priority-0 is configured (override does **not** raise caps). Live config on the main Binance account: `total_positions_long=6`, `total_positions_short=6` since 2026-04-23.
+Each account carries configured LONG and SHORT maximums. BSCS derives a lower
+effective cap during elevated and fragile regimes without rewriting those
+saved settings. The selection phase will not assign a position above the
+effective cap, even when the test-only symbol override is configured; an
+override never creates capacity.
+
+The read-only mobile dashboard shows effective versus configured caps and the
+selected account's latest clean close. Only `closed` history qualifies;
+`cancelled` and `failed` rows remain operational history and never become the
+trader's last successful close.
 
 ---
 

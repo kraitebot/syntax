@@ -29,30 +29,24 @@ Smaller, further-from-liquidation, and fewer-at-once — three different ways to
 
 ---
 
-## The public read API
+## One BSCS decision boundary
 
-Every consumer reads regime state through a single façade:
+Every trading and dashboard consumer enters through the same BSCS boundary.
+It loads one point-in-time market snapshot, then exposes account-specific
+opening permission, position capacity, leverage, and margin decisions from
+that shared truth. Consumers do not recompute score bands or multipliers.
 
-```php
-use Kraite\Core\Support\MarketRegime\BlackSwanIndex;
-
-$index = BlackSwanIndex::current();
-
-if ($index->shouldBlockOpens()) {
-    // skip the open dispatch
-}
-```
-
-`current()` is the only constructor — it loads the singleton + the latest snapshot in one go. The instance is immutable; every call returns the same point-in-time state. Key methods:
-
-| Method | What it returns |
+| Decision | Result |
 |---|---|
-| `score()` | `?int` 0–100, `null` if no compute has landed yet |
-| `band()` | `?RegimeBand` enum |
-| `shouldBlockOpens()` | `bool` — **the gate signal**, used by `HasTradingGuards::canOpenPositions()`. Absolute — no override |
-| `isCooldownActive()` | `bool` — system-set block currently in force |
-| `isStale()` | `bool` — score older than `freshnessMaxSeconds()` (default 6900 s) |
-| `toArray()` | Lossless dashboard payload — every field admin needs in one call |
+| Market state | Score, band, freshness, cooldown, and block state |
+| Opening | Whether new exposure may begin |
+| Position capacity | Effective LONG/SHORT caps versus saved account maximums |
+| Leverage | Regime-adjusted leverage for the candidate position |
+| Margin | Regime-adjusted margin allocation for the candidate position |
+
+This boundary is deliberately account-scoped where account settings matter.
+The same global score can therefore produce different absolute position caps
+for two accounts while keeping identical risk ratios.
 
 ---
 
@@ -85,15 +79,16 @@ A regime snapshot has a freshness budget (`freshnessMaxSeconds`, default 6900 s 
 The iPhone dashboard exposes the same global regime truth as one bounded,
 read-only KPI tile: score, band, block state, freshness, status, and configured
 block threshold. The visual scale runs continuously from Calm through Critical
-and marks both the current score and block threshold. Sub-signal composition
-and cooldown internals remain operator-only; the trader needs the actionable
-portfolio-risk posture, not the diagnostic machinery behind it.
+and marks both the current score and block threshold. It also shows effective
+versus configured LONG/SHORT capacity for the selected account. Sub-signal
+composition and cooldown internals remain operator-only; the trader needs the
+actionable portfolio-risk posture, not the diagnostic machinery behind it.
 
 ---
 
 ## Cross-lens links
 
-- **[Position lifecycle](/docs/lifecycles/position-lifecycle)** — open phase reads `shouldBlockOpens()` before dispatching
+- **[Position lifecycle](/docs/lifecycles/position-lifecycle)** — open phase consults BSCS before dispatching
 - **[Open positions](/docs/domains/open-positions)** — the domain whose creation is gated by this subsystem
-- **[Components catalog](/docs/components-catalog)** — `BlackSwanIndex` is the public façade in `kraitebot/core`
+- **[Components catalog](/docs/components-catalog)** — shared building blocks behind the BSCS boundary
 - **[Pheme](/docs/servers/pheme)** — serves the bounded mobile regime summary
