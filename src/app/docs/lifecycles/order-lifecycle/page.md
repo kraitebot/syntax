@@ -29,7 +29,9 @@ This is the **lifecycle lens** for the order-level flow. For the per-order busin
        Position    Position    Position
 ```
 
-`FILLED` triggers different downstream workflows depending on the order type. `CANCELED` and `EXPIRED` are shape-equivalent — both mean the order is no longer live at the exchange.
+`FILLED` triggers different downstream workflows depending on the order type.
+`CANCELED`, `EXPIRED`, and `REJECTED` are shape-equivalent for replacement:
+the order is no longer live at the exchange.
 
 ---
 
@@ -53,6 +55,9 @@ the order remains unconfirmed and the workflow follows its failure path.
 Classic accounts use the v2 order surface and Unified accounts use v3. Kraite
 normalizes both regular and strategy orders before sync, correction, or
 recovery. Deterministic client identities survive retries on both surfaces.
+Unified full-position TP and SL are one remote strategy represented by two
+local logical rows. One cancellation or replacement acts on the shared remote
+object and reconciles both rows together.
 
 ---
 
@@ -86,7 +91,11 @@ Three observer arms, three downstream block dispatches. Each block is itself a s
 
 ## The cancel / expire path
 
-`CANCELED` / `EXPIRED` arrive via the same WS push (or the 5-min polling safety net). On an active position, a DCA LIMIT, TP, or SL routes to `PreparePositionReplacementJob`, which verifies the position still exists and rebuilds the missing order set. Concurrent cancellations share one live replacement workflow, so several exchange events cannot create duplicate rungs.
+`CANCELED` / `EXPIRED` / `REJECTED` arrive through exchange synchronization.
+On an active position, a DCA LIMIT, TP, or SL routes to
+`PreparePositionReplacementJob`, which verifies the position still exists and
+rebuilds the missing order set. Concurrent terminal events share one live
+replacement workflow, so they cannot create duplicate rungs.
 
 An active order whose price or quantity differs from its stored reference follows the separate `PrepareOrderCorrectionJob` path. That workflow restores intent and is deduplicated per order, including the exchange-specific Bitget correction class.
 
@@ -94,7 +103,13 @@ A specific high-frequency case: **manual close detection.** When a reduce-only F
 
 The following flat `ACCOUNT_UPDATE` adds a separate risk action. Once exchange quantity is zero, `CancelPositionOpenOrdersJob` is created as a high-priority root and cancels only live DCA LIMIT orders for that position. It does not wait behind the replacement tree and does not cancel TP or SL protection. Hedge updates match the local direction; a one-way `BOTH` update derives the logical side from signed quantity. Duplicate frames collapse into the same live cancellation.
 
-REST-only absence uses the same opening-order selector but not the same timing. The first valid flat snapshot schedules a high-priority confirmation after 20 seconds; a second valid flat snapshot is required before cancellation. Replacement performs that second read through its normal workflow, while WAP, quantity sync, and drift use `ConfirmPositionFlatAndCancelOpeningOrdersJob`. Vendor errors, malformed snapshots, reappearance, and opposite-side rows leave all orders intact. This prevents one stale exchange read from stripping the ladder from a still-open position.
+REST-only absence uses the same opening-order selector but not the same timing.
+The first valid flat snapshot schedules a high-priority confirmation after 20
+seconds. The second valid flat snapshot cancels the opening ladder and starts
+`ClosePositionJob` with confirmed-flat truth. The lifecycle reconciles TP, SL,
+and remaining orders, then records `closed` without sending another exchange
+close. Vendor errors, malformed snapshots, reappearance, and opposite-side
+rows leave all orders intact.
 
 ---
 

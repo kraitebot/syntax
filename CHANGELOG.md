@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.6.0] — 2026-07-21
+
+### Trading, registration, and mobile reference
+
+- [IMPROVED] Position and order lifecycles document Bitget Unified's combined
+  protection identity, rejected-order recovery, and confirmed-flat manual
+  closure without a redundant exchange close.
+- [IMPROVED] Account and architecture chapters document the mandatory
+  registration acknowledgements, 6+6 slot defaults, and release-gated mobile
+  passkey boundary.
+
 ## [0.5.3] — 2026-07-20
 
 ### Order synchronization reference

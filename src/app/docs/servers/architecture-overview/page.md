@@ -81,6 +81,13 @@ internals. It cannot trade, edit accounts, control the engine, or access
 another trader's accounts. Responses are bounded, throttled, and briefly
 cached. Endpoint secrecy is not a control; the design assumes every route is
 known.
+
+The same boundary supports passkey registration, management, and sign-in.
+Challenges are single-use and bound to their ceremony; a verified passkey
+receives the same read-only token. `api.kraite.com` serves Apple's exact
+web-credentials association for the signed Kraite app. Native passkey controls
+remain release-gated until signed-device association is verified, so password
+login stays available throughout rollout.
 {% /callout %}
 
 ---

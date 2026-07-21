@@ -58,9 +58,10 @@ one-way closing orders use reduce-only intent. Classic accounts use Bitget v2
 and Unified accounts use v3, with both normalized into the same lifecycle.
 
 `PlacePositionTpslJob` persists the TP and SL identities before sending the
-combined request. Retries reconstruct those same orders, match returned IDs by
-client identity, and avoid duplicate protection. A position read remains only
-as compatibility fallback when Bitget omits those IDs.
+combined request. Classic returns one exchange ID per leg. Unified returns one
+strategy ID shared by the two local logical rows. Retries reconstruct those
+same orders and avoid duplicate protection; sync, drift, recovery,
+replacement, and cancellation still distinguish TP from SL.
 
 Every Bitget round-trip carries the stablecoin product selected by the
 account or exchange symbol. USDT uses `USDT-FUTURES` with USDT margin; USDC
@@ -177,7 +178,7 @@ Every REST workflow that can act on a missing exchange position now uses the sam
 
 Matching is exact on symbol plus logical direction. Hedge `LONG` and `SHORT` remain distinct. One-way `BOTH` rows derive direction from signed quantity, so a same-symbol opposite-side row cannot satisfy the check.
 
-The first valid flat result schedules a high-priority confirmation after 20 seconds. Replacement reruns its normal exchange query through `PreparePositionReplacementJob`; WAP, quantity sync, and drift use `ConfirmPositionFlatAndCancelOpeningOrdersJob`. Only a second valid flat snapshot may cancel Kraite-owned live opening LIMITs. A reappearing position, invalid response, or opposite-side row leaves orders untouched. Replacement then owns final close-versus-residual reconciliation; WAP and quantity sync stop safely; drift remains alert-only.
+The first valid flat result schedules a high-priority confirmation after 20 seconds. Replacement reruns its normal exchange query through `PreparePositionReplacementJob`; WAP, quantity sync, and drift use `ConfirmPositionFlatAndCancelOpeningOrdersJob`. Only a second valid flat snapshot may cancel Kraite-owned live opening LIMITs and dispatch `ClosePositionJob` with confirmed-flat truth. The close workflow reconciles every remaining order and records `closed`, but skips a redundant exchange close. A reappearing position, invalid response, or opposite-side row leaves orders untouched.
 
 {% callout type="warning" title="Why two REST reads?" %}
 Exchange REST responses can be stale or can carry vendor errors inside successful HTTP envelopes. Acting on one apparent absence could cancel the DCA ladder while exposure still exists. The direct User Data Stream zero-quantity event remains immediate because it is already an exchange position event; REST absence pays a 20-second confirmation delay to avoid destructive false-flat action.
@@ -187,7 +188,7 @@ Exchange REST responses can be stale or can carry vendor errors inside successfu
 
 `OrderObserver::updated()` reacts to status drift:
 
-- `LIMIT` / `STOP-MARKET` / `PROFIT-*` CANCELLED or EXPIRED → `PreparePositionReplacementJob` (recreate the missing DCA / TP / SL order); deduped by pending step check
+- `LIMIT` / `STOP-MARKET` / `PROFIT-*` CANCELLED, EXPIRED, or REJECTED → `PreparePositionReplacementJob` (recreate the missing DCA / TP / SL order); deduped by pending step check
 - `PROFIT-*` or `STOP-MARKET` FILLED → `ClosePositionJob`; deduped (added 2026-04-21; double-fire was previously possible when TP and SL filled in the same sync cycle)
 - `LIMIT` FILLED → `ApplyWapJob`; deduped
 
@@ -198,6 +199,11 @@ Exchange REST responses can be stale or can carry vendor errors inside successfu
 ### Decision: formatter normalization on sync write (2026-04-23)
 
 All four `apiSync*` paths (default / algo / stop-order / plan-order) now route incoming price through `api_format_price` and incoming quantity through `api_format_quantity` before persisting. Outbound placement always applied these formatters; the sync write didn't, so exchange echoes that weren't tick-aligned (or carried non-lot quantities) could land in the DB as slightly drifted values. New contract keeps DB values on the same tick / lot grid at all times. Zero / null echo preserves the stored value (cancelled Binance algo orders respond with `price=0`, which would otherwise erase the audit trail).
+
+Polling writes only attributes that changed. An unchanged exchange echo does
+not refresh the order timestamp, allowing the drift checker's quiet window to
+inspect stable orders. Real changes still pass through the observer and keep
+replacement, correction, WAP, and close reactions active.
 
 ### Decision: NOT_FOUND handling (2026-04-21)
 
@@ -278,14 +284,16 @@ Two-layer fix. The crash class is closed at the source: every Binance order-resp
 
 ## Close
 
-Triggered by observer when `PROFIT-*` or `STOP-MARKET` reaches FILLED.
+Triggered when protection fills or when two independent exchange snapshots
+confirm that the trader manually flattened the position.
 
 ### Flow (ClosePositionJob child block)
 
 1. `UpdatePositionStatus` → `closing`
 2. `CancelPositionOpenOrdersJob` — cancel remaining LIMITs
 3. `CancelAlgoOpenOrdersJob` — cancel SL
-4. `ClosePositionAtomicallyJob` — reduceOnly market close for any residual position
+4. `ClosePositionAtomicallyJob` — reduceOnly market close for any residual
+   position; skipped when the workflow already has confirmed-flat truth
 5. `SyncPositionOrdersJob` — reconcile
 6. `QueryAccountPositionsJob` — verify
 7. `VerifyPositionResidualAmountJob` — catch partial closes

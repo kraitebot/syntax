@@ -110,6 +110,12 @@ wallets before showing the quote choice. A registration trial starts with a
 renewal anchor, preventing a completed trial from becoming permanently
 unrenewable.
 
+The final registration step requires three explicit acknowledgements: trading
+can lose money, the trader will invest responsibly, and the Terms of Service
+plus Privacy Policy are accepted. Missing acknowledgement keeps the draft user
+and account inactive. New and retried registrations start with six LONG and
+six SHORT slots; existing accounts keep their configured caps.
+
 The wizard shows the minimum read and futures-trading permissions for the
 selected exchange and tells users to leave withdrawals and transfers off.
 Every eligible fleet server verifies connectivity and confirms that withdrawal
