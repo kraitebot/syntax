@@ -116,6 +116,13 @@ plus Privacy Policy are accepted. Missing acknowledgement keeps the draft user
 and account inactive. New and retried registrations start with six LONG and
 six SHORT slots; existing accounts keep their configured caps.
 
+Once public registration commits, Kraite sends one mail-only welcome to the
+trader. It explains when automated trading starts, shows whether the exchange
+already had positions or limit orders, and repeats the required risk and
+financial-advice disclosures. A successful welcome is not repeated for another
+account owned by the same trader; failed mail can be retried. Resuming an
+existing account does not trigger this onboarding message.
+
 The wizard shows the minimum read and futures-trading permissions for the
 selected exchange and tells users to leave withdrawals and transfers off.
 Every eligible fleet server verifies connectivity and confirms that withdrawal

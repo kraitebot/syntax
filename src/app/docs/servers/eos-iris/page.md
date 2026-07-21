@@ -47,7 +47,12 @@ There is **no per-account-to-box routing** in Kraite by design. Accounts live in
 ## Why workers and the indicator pool are split
 
 {% callout title="Architectural decision" %}
-The production TAAPI throttler admits 65 requests per 15 seconds, so the indicator queue spends part of its wall-clock time **waiting** for the next window slot. Running those waiters in the same Horizon process pool as position/order work would starve real-time trading during a fan-out. Indicator processes therefore live on Tyche plus Athena's secondary pool, never on these six trading workers. See [tyche](/docs/servers/tyche).
+The production TAAPI throttler admits 68 requests per 15 seconds, so the
+indicator queue spends part of its wall-clock time **waiting** for the next
+window slot. Running those waiters in the same Horizon process pool as
+position/order work would starve real-time trading during a fan-out. Indicator
+processes therefore live on Tyche plus Athena's secondary pool, never on these
+six trading workers. See [tyche](/docs/servers/tyche).
 {% /callout %}
 
 ---

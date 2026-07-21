@@ -34,7 +34,13 @@ budget.
 ## Why isolation matters here
 
 {% callout title="Architectural decision" %}
-Production admits 65 TAAPI requests per 15-second window with a 200 ms minimum delay. A symbol/timeframe request currently contains seven active indicator constructs. During an HH:30 indicator fan-out the throttler routinely makes consumers wait for the next window slot. Keeping those waits in Tyche's pool and Athena's secondary pool prevents them from occupying the positions/orders process slots on the six trading workers.
+Production admits 68 TAAPI requests per 15-second window with a 221 ms minimum
+delay. This is the nearest whole-request profile to 10% below the Expert-plan
+ceiling. A symbol/timeframe request currently contains seven active indicator
+constructs. During an HH:30 indicator fan-out the throttler routinely makes
+consumers wait for the next window slot. Keeping those waits in Tyche's pool
+and Athena's secondary pool prevents them from occupying the positions/orders
+process slots on the six trading workers.
 {% /callout %}
 
 The cronjob queue is co-located with indicators because cron-triggered work is the same shape — predictable, fan-out-heavy, latency-tolerant. None of it needs to share a process pool with order placement.

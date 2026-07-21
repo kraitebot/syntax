@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.7.0] — 2026-07-21
+
+### Registration messaging and indicator pacing
+
+- [IMPROVED] Account and notification chapters document the one-time
+  post-registration welcome, failed-mail recovery, and the exclusion of
+  existing-account resumes.
+- [IMPROVED] Indicator and fleet chapters document the 68-request, 221 ms
+  TAAPI profile used to stay roughly 10% below the provider ceiling.
+
 ## [0.6.0] — 2026-07-21
 
 ### Trading, registration, and mobile reference

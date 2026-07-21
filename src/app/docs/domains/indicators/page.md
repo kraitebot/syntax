@@ -24,15 +24,28 @@ The indicator domain runs against a **finite per-window request budget** at TAAP
 
 | Setting | Value |
 |---|---|
-| `TAAPI_THROTTLER_REQUESTS_PER_WINDOW` | 65 (tuned below the 75 plan cap) |
+| `TAAPI_THROTTLER_REQUESTS_PER_WINDOW` | 68 (nearest whole-request profile to 10% below the 75 plan cap) |
 | `TAAPI_THROTTLER_WINDOW_SECONDS` | 15 |
-| `TAAPI_THROTTLER_MIN_DELAY_MS` | 200 (self-imposed pacing) |
+| `TAAPI_THROTTLER_MIN_DELAY_MS` | 221 (self-imposed pacing) |
 | `TAAPI_THROTTLER_SAFETY_THRESHOLD` | 1.0 |
 
-Effective ceiling is 65 requests / 15 s, with each request held ≥ 200 ms behind the last. These are per-box `.env` values on the two indicator consumers (athena + tyche); they are not in version control.
+Effective ceiling is 68 requests / 15 s, with each request held ≥ 221 ms behind
+the last. The default profile is tracked in the application configuration and
+applied through the production environment on the two indicator consumers,
+Athena and Tyche.
 
-{% callout title="Why 65 and 200 ms — the 429 story" %}
-Both indicator consumers share **one** throttle bucket (cache key `taapi_throttler`, no IP, on hyperion Redis), and TAAPI limits per API key — so two boxes contend for one 75/15 s budget. Running the cap at exactly 75 with no min-delay produced a chronic **~20 % 429 reject rate**: the window counter is non-atomic (check-then-record), so concurrent workers slip past 75 in bursts, and with no spacing the batch fired in 2-3 s and clustered across TAAPI's real window boundary. The rejects predated athena joining as 2nd consumer (2026-06-07) — athena added throughput, not reject rate. Dropping the cap to 65 (headroom for the race) and the min-delay to 200 ms (spread the burst evenly) cut the live reject rate to a steady **~9-14 %** band — roughly a 40 % reduction. It does not reach zero: the non-atomic race and the fixed-window-vs-TAAPI-window phase mismatch remain. Eliminating it entirely would need atomic admission (Redis INCR/Lua), but 429s here are benign (auto-retried via the `is_throttled` reschedule, no ban), so the tuning is the proportionate fix.
+{% callout title="Why 68 and 221 ms — the 429 story" %}
+Both indicator consumers share **one** throttle bucket on Hyperion, and TAAPI
+limits per API key. Running at the full 75-request ceiling created recurring
+429 responses during concurrent fan-out. The 68-request profile keeps the
+existing throttler behavior while leaving roughly 10% headroom; 221 ms spreads
+the nominal allowance across the window.
+
+This tuning deliberately does not redesign admission. Some 429 responses may
+still occur when concurrent workers cross TAAPI's differently aligned window.
+They remain benign: the step reschedules without consuming its retry budget.
+The goal is fewer rejected calls without materially reducing useful indicator
+throughput.
 {% /callout %}
 
 ---

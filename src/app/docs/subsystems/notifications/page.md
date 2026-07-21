@@ -2,7 +2,10 @@
 title: Notifications
 ---
 
-Operator alerts (Pushover, Mail, Telegram) pass through **two independent gates** before they reach the admin: the **Throttler**, which suppresses repeats, and the **Threshold**, which can require repetition before letting one through. Together they let Kraite stay quiet on noise while still escalating anything that's genuinely recurring. {% .lead %}
+Operator alerts and trader messages pass through the same delivery machinery.
+The **Throttler** suppresses repeats, while the optional **Threshold** can
+require recurrence before an operator alert is delivered. Together they keep
+Kraite quiet on noise without losing required trader communication. {% .lead %}
 
 This is the **subsystem lens** — the delivery machinery. For the per-canonical recipient mapping and channel coverage, that inventory lives in the raw spec; this chapter covers how an occurrence becomes (or doesn't become) a delivered alert.
 
@@ -30,6 +33,19 @@ application remains high severity in audit and email presentation because it
 is an important position event, but Pushover delivers it at normal priority.
 It stays visible without bypassing quiet hours; the bot already completed the
 protective TP adjustment, so no immediate operator action is required.
+
+### Required onboarding mail
+
+Most notifications follow the trader's configured channel preferences. The
+registration welcome is deliberately mail-only because a newly registered
+trader may not have configured Pushover or Telegram. It is sent after public
+registration commits and explains the first trading cycle, existing exchange
+activity, and trading risk. Re-enabling an existing account does not send it.
+
+Delivery is once per trader after a successful or still-pending mail audit
+record. A failed mail does not consume that entitlement and can be retried.
+This avoids duplicate welcomes when the same trader later adds another
+account, while still recovering from a transport failure.
 
 ---
 
