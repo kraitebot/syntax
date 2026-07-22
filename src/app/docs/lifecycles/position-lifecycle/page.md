@@ -40,7 +40,7 @@ Triggered by `kraite:cron-create-positions`. Running autonomously since 2026-04-
 4. `DetermineLeverage` — reads from leverage brackets
 5. `SetLeverage` — exchange API
 6. `VerifyOrderNotionalForMarketOrderJob` — pre-check; rejects if market slice falls below exchange `min_notional` for the symbol, **and** runs the full ladder simulation against fresh mark price (see "Pre-placement ladder simulation" below)
-7. `PlaceMarketOrderJob` — exchange API
+7. `PlaceMarketOrderJob` — repeats live trading readiness, then exchange API
 8. `DispatchLimitOrdersJob` — creates N LIMIT Orders in DB and spawns N sibling `PlaceLimitOrderJob` steps
 9. `PlaceStopLossOrderJob` — SL anchored to last limit rung. **Placed FIRST so the position is protected before the TP can fill on a fast-trade.** See "SL-before-TP invariant" below.
 10. `PlaceProfitOrderJob` — initial TP based on `opening_price`
@@ -119,6 +119,23 @@ All order-placement atomics now follow the same contract:
 - `doubleCheck` + `complete` verify against the confirmed exchange state
 
 Any retry trigger is safe — reconciling against the exchange instead of abandoning confirmed work.
+
+### Decision: immediate account stop at market entry (2026-07-23)
+
+Turning account trading off is an immediate new-exposure stop. The account
+screen persists only that permission, so unrelated unsaved configuration does
+not leak into the action.
+
+The scheduler and slot dispatcher already checked account, user, billing,
+plan, and exchange readiness. A queued per-position workflow could still
+outlive those earlier checks. `PlaceMarketOrderJob` therefore repeats the full
+readiness decision at the last lifecycle boundary before market placement. A
+refusal follows the existing no-exposure cancellation path.
+
+An entry already accepted by the exchange is different: reconciliation must
+continue even after opening permission is removed. This keeps the rule
+one-directional — stop new exposure immediately, never abandon exposure that
+already exists.
 
 ### Decision: ghost algo order guard on cancellation
 

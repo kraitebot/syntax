@@ -119,6 +119,19 @@ Existing positions continue through protection, synchronization, WAP, and
 close when a subscription lapses or opening is switched off. Those gates stop
 new exposure; they do not abandon exposure that already exists.
 
+The account-screen switch shows the stored opening permission. Turning it off
+persists immediately and changes only that permission, leaving unsaved
+leverage, margin, slot, quote, and protection edits untouched. Turning off is
+always available on a connected account, including while connectivity is
+degraded or the subscription is inactive; turning on still requires current
+readiness and the normal configuration save.
+
+An opening workflow already queued repeats the full readiness check at the
+market-entry boundary. If permission was removed, it stops before creating new
+exchange exposure and follows normal empty cleanup. If the exchange already
+accepted an entry, reconciliation continues so live exposure is never
+abandoned.
+
 ## Registration and connectivity
 
 Public self-registration is currently paused for the private beta. The public
