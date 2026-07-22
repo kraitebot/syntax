@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.8.0] — 2026-07-22
+
+### Private single-host reference
+
+- [CHANGED] Server, queue, scheduler, daemon, lifecycle, and dynamic-command
+  chapters now describe the one-host `kraite` production topology.
+- [CHANGED] Processing documentation records Binance as the only active
+  exchange while preserving disabled exchange data for future reactivation.
+- [SECURITY] Next.js, PostCSS, and Sharp are refreshed to advisory-free
+  production dependency versions.
+
+### Verification
+
+- [VERIFIED] Lint, dependency audit, and all 81 statically generated pages pass.
+
 ## [0.7.1] — 2026-07-21
 
 ### Unified trading and registration reference

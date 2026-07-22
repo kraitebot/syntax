@@ -72,7 +72,7 @@ When deciding which chapters need touching for a given commit:
 
 | Code area | Lens chapters typically touched |
 |---|---|
-| `app/Jobs/Position/**` | `lifecycles/position-lifecycle` (canonical) + `subsystems/dispatch-daemon` + `servers/eos-iris` + `domains/open-positions` |
+| `app/Jobs/Position/**` | `lifecycles/position-lifecycle` (canonical) + `subsystems/dispatch-daemon` + `servers/kraite` + `domains/open-positions` |
 | `app/Jobs/Order/**`, observers | `lifecycles/order-lifecycle` + `domains/orders` + relevant subsystem |
 | `app/Console/Commands/Kraite*` (cron) | `subsystems/scheduler` + the lifecycle the command triggers |
 | Horizon config / supervisor | `subsystems/horizon-queues` + the affected server chapter |

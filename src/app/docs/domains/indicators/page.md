@@ -31,11 +31,10 @@ The indicator domain runs against a **finite per-window request budget** at TAAP
 
 Effective ceiling is 68 requests / 15 s, with each request held ≥ 221 ms behind
 the last. The default profile is tracked in the application configuration and
-applied through the production environment on the two indicator consumers,
-Athena and Tyche.
+applied through the production environment on Kraite's indicator lane.
 
 {% callout title="Why 68 and 221 ms — the 429 story" %}
-Both indicator consumers share **one** throttle bucket on Hyperion, and TAAPI
+The indicator workers share **one** Redis throttle bucket on Kraite, and TAAPI
 limits per API key. Running at the full 75-request ceiling created recurring
 429 responses during concurrent fan-out. The 68-request profile keeps the
 existing throttler behavior while leaving roughly 10% headroom; 221 ms spreads
@@ -77,19 +76,18 @@ own recent `QuerySymbolIndicatorsJob` or
 already-running repair from an unattended stale signal. Completed, failed, or
 old abandoned steps do not suppress the alert.
 
-After deployment, Athena also gives this dispatcher-derived signal a bounded
+After deployment, Kraite also gives this dispatcher-derived signal a bounded
 10-minute recovery grace. Other health surfaces remain active throughout.
 
-A copied Bitget, Bybit, or KuCoin row is not separately reported stale while
-the matching Binance token and quote has a fresh native result. If the source
-is stale, Binance still alerts, so copy-lag suppression cannot hide a real
-analysis outage.
+Disabled exchange rows are excluded from indicator dispatch and freshness
+alerts. Binance remains the only active exchange and therefore the only live
+direction source.
 
 ---
 
 ## Why only Binance accounts query TAAPI
 
-A single direction conclusion is shared across exchanges via `CopyDirectionToOtherExchangesJob`. Bybit / KuCoin / Bitget use the Binance-derived direction directly. Duplicating the TAAPI query per exchange would burn the rate-limit budget without changing the answer — directionality is BTC-anchored, and BTC moves the same way across exchanges to <0.1 % drift on liquid tokens.
+TAAPI direction conclusions are produced from Binance data. If another exchange is explicitly re-enabled, `CopyDirectionToOtherExchangesJob` can share that Binance-derived result without duplicating TAAPI requests; while it remains disabled, it receives no live processing.
 
 ---
 
@@ -97,4 +95,4 @@ A single direction conclusion is shared across exchanges via `CopyDirectionToOth
 
 - **[Signal → direction](/docs/lifecycles/signal-direction)** — how seven readouts at a time progressively conclude a direction
 - **[Token selection](/docs/domains/token-selection)** — uses the per-timeframe correlation + elasticity readouts in the score
-- **[Athena and Tyche](/docs/subsystems/horizon-queues)** — the two hosts that consume the `indicators` Horizon queue
+- **[Horizon queues](/docs/subsystems/horizon-queues)** — the bounded `indicators` lane on Kraite

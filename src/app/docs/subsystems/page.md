@@ -6,13 +6,13 @@ The **subsystem lens** answers "what does this piece of machinery do?" — indep
 
 {% quick-links %}
 
-{% quick-link title="Dispatch daemon" icon="installation" href="/docs/subsystems/dispatch-daemon" description="The persistent supervisor process on Athena that replaced 20 scheduler forks per second with one long-lived loop. Every cron-originating workload flows through here." /%}
+{% quick-link title="Dispatch daemon" icon="installation" href="/docs/subsystems/dispatch-daemon" description="The persistent supervisor process on Kraite that replaced scheduler forks with one long-lived loop. Every cron-originating workload flows through here." /%}
 
 {% quick-link title="Scheduler" icon="presets" href="/docs/subsystems/scheduler" description="The Laravel scheduler — kline fetches, indicator computation, listenKey refreshes, balance snapshots. The time-driven entry point that hands off to the daemon and the queues." /%}
 
 {% quick-link title="WebSocket streams" icon="plugins" href="/docs/subsystems/websocket-streams" description="Two long-lived daemons: per-account user-data WS for order events (push, <100 ms) and the public mark-price WS for ~1 Hz price refresh across all symbols and exchanges." /%}
 
-{% quick-link title="Horizon queues" icon="theming" href="/docs/subsystems/horizon-queues" description="Seven queues across five boxes (athena for user-data, eos + iris + nyx for trading, tyche for indicators + cronjobs). The consumer side of every workload Kraite dispatches — positions, orders, priority, indicators, and more." /%}
+{% quick-link title="Horizon queues" icon="theming" href="/docs/subsystems/horizon-queues" description="Eight bounded lanes on the single Kraite host. The consumer side of every trading, stream, indicator, scheduled, and web workload." /%}
 
 {% quick-link title="Market regime" icon="lightbulb" href="/docs/subsystems/market-regime" description="The black-swan circuit breaker. Score 0–100, four bands (Calm / Elevated / Fragile / Critical), gates new opens at the Critical band. Override beats cooldown." /%}
 
@@ -24,6 +24,6 @@ The **subsystem lens** answers "what does this piece of machinery do?" — indep
 
 The subsystem lens is one of four. The same machinery shows up under three other angles:
 
-- **[Servers](/docs/servers/architecture-overview)** — *where* each subsystem physically runs (athena hosts the daemon + scheduler + streams; pheme hosts the public web vhosts; six trading workers consume position/order queues; tyche owns cronjobs plus part of the indicator lane; hyperion holds MySQL + Redis).
+- **[Servers](/docs/servers/architecture-overview)** — where every subsystem runs on the single production host.
 - **[Business domains](/docs/domains/open-positions)** — *what* the subsystems manipulate (positions, orders, indicators, accounts, token selection).
 - **[Lifecycles](/docs/lifecycles/position-lifecycle)** — *how* a single end-to-end flow threads through every subsystem in turn.

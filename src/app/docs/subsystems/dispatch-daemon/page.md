@@ -2,7 +2,7 @@
 title: Dispatch daemon
 ---
 
-The dispatch daemon is a persistent single-process step orchestrator that replaced the old scheduler-fork model. It runs on **Athena** (ingestion) under supervisor and is the entry point for every queued workload that originates from cron — including the entire position-open and position-close blocks. {% .lead %}
+The dispatch daemon is a persistent single-process step orchestrator that replaced the old scheduler-fork model. It runs in the ingestion application on **Kraite** under supervisor and is the entry point for every queued workload that originates from cron — including the entire position-open and position-close blocks. {% .lead %}
 
 This is the **subsystem lens** view. For the full per-step ordering of the position flow it dispatches, jump to [position lifecycle](/docs/lifecycles/position-lifecycle).
 
@@ -44,7 +44,8 @@ The daemon doesn't *know* about position semantics — it dispatches the block a
   children instead of repeatedly walking settled history.
 - **Queue ownership** — high-priority work keeps a valid explicit server queue;
   only missing or invalid queues fall back to the priority lane.
-- **Survives Horizon restarts** — daemon and Horizon are independent supervisors; restarting workers on eos / iris / nyx / hemera / palaemon / aristaeus / tyche does not interrupt the dispatch loop on Athena
+- **Survives Horizon restarts** — daemon and Horizon are independent
+  supervisors; restarting Horizon does not interrupt the dispatch loop
 
 ---
 
@@ -66,5 +67,5 @@ wait on a partial probe tree.
 ## Cross-lens links
 
 - **[Position lifecycle](/docs/lifecycles/position-lifecycle)** — full step-by-step flow this daemon dispatches
-- **[Athena (ingestion)](/docs/servers/athena)** — the box this daemon runs on
+- **[Kraite host](/docs/servers/kraite)** — where this daemon runs
 - **[Horizon queues](/docs/subsystems/horizon-queues)** — where the dispatched jobs are consumed

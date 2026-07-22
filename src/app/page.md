@@ -8,7 +8,7 @@ This site is the **functional documentation of Kraite** — written for Bruno, r
 
 {% quick-link title="Subsystems" icon="installation" href="/docs/subsystems/dispatch-daemon" description="Scheduler, dispatch daemon, WebSocket streams, queues, market regime — what each piece of Kraite's machinery does and the decisions baked into it." /%}
 
-{% quick-link title="Servers" icon="presets" href="/docs/servers/architecture-overview" description="Athena, Apollo, Ares, Zeus, Hermes — the multi-server topology and what each box is responsible for." /%}
+{% quick-link title="Servers" icon="presets" href="/docs/servers/architecture-overview" description="The single private-use Kraite host, its resource budget, and the applications and workers it owns." /%}
 
 {% quick-link title="Business domains" icon="plugins" href="/docs/domains/open-positions" description="Positions, orders, indicators, accounts — the business objects Kraite manipulates and the rules that govern them." /%}
 
@@ -25,7 +25,7 @@ Same system, four viewpoints. Each chapter is written from one viewpoint — nev
 | Lens | Question it answers | Example chapter |
 |---|---|---|
 | **Subsystem** | "What does this piece of machinery do?" | Dispatch daemon |
-| **Server** | "Which box runs this and why?" | Apollo + Ares |
+| **Server** | "Which box runs this and why?" | Kraite |
 | **Domain** | "What is this business object and what states can it be in?" | Open positions |
 | **Lifecycle** | "What's the full flow from start to finish?" | Position lifecycle |
 
@@ -55,7 +55,7 @@ No live data, no metrics, no exchange state. For runtime observability check the
 The demo chapter is **[Position lifecycle](/docs/lifecycles/position-lifecycle)** — the canonical deep chapter that defines the depth and tone for everything else. The other lens views of the same flow live at:
 
 - [Dispatch daemon](/docs/subsystems/dispatch-daemon) — subsystem angle
-- [Eos + Iris + Nyx](/docs/servers/eos-iris) — server angle
+- [Kraite](/docs/servers/kraite) — server angle
 - [Open positions](/docs/domains/open-positions) — domain angle
 
 Other navigation entries are stubbed and will fill in as `/kraite-tag` runs touch them.

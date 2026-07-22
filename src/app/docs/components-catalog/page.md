@@ -100,7 +100,7 @@ End every cross-lens chapter with a "See this from another angle" or "Cross-lens
 
 ```
 - **[Position lifecycle](/docs/lifecycles/position-lifecycle)** — full step-by-step flow
-- **[Athena (ingestion)](/docs/servers/athena)** — the box this runs on
+- **[Kraite host](/docs/servers/kraite)** — the server this runs on
 ```
 
 ---

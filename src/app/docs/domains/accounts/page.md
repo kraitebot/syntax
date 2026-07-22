@@ -21,6 +21,23 @@ This is the **business-domain lens** view. For where account credentials are rea
 
 The `(user_id, api_system_id)` pair is unique. A user has at most one account per exchange.
 
+## Active exchange policy
+
+Binance is the only active exchange in the private installation. Bybit,
+KuCoin, and Bitget remain in the catalogue and keep historical records, but
+the engine excludes their accounts, symbols, balances, brackets, streams,
+market-data jobs, and new-position dispatch from current processing.
+
+{% callout type="note" title="Disabled, not deleted" %}
+Exchange support code and data remain available for a later deliberate
+reactivation. The activation gate changes processing scope without rewriting
+an account's own active or trading flags.
+{% /callout %}
+
+The first production seed creates only the configured sysadmin. It creates no
+trader and no exchange account; personal Binance onboarding happens after
+server health is proven.
+
 ### Bitget product context
 
 Bitget splits stablecoin perpetuals into separate products. An account-wide
@@ -113,8 +130,9 @@ unrenewable.
 The final registration step requires three explicit acknowledgements: trading
 can lose money, the trader will invest responsibly, and the Terms of Service
 plus Privacy Policy are accepted. Missing acknowledgement keeps the draft user
-and account inactive. New and retried registrations start with six LONG and
-six SHORT slots; existing accounts keep their configured caps.
+and account inactive. New and retried registrations start with one LONG and
+one SHORT slot from the centrally managed registration defaults; existing
+accounts keep their configured caps when those defaults change.
 
 Once public registration commits, Kraite sends one mail-only welcome to the
 trader. It explains when automated trading starts, shows whether the exchange
@@ -125,17 +143,17 @@ existing account does not trigger this onboarding message.
 
 The wizard shows the minimum read and futures-trading permissions for the
 selected exchange and tells users to leave withdrawals and transfers off.
-Every eligible fleet server verifies connectivity and confirms that withdrawal
+The production server verifies connectivity and confirms that withdrawal
 permission is disabled. Registration cannot activate the account when
 withdrawals are enabled or the permission cannot be verified.
 
 Balance discovery and the final existing-trade inspection run as
-high-priority work on the trading fleet, not as exchange calls from Pheme. The
+high-priority work on `kraite`, not inside the public web request. The
 wizard waits for the session-bound result before continuing. A failed read is
 never treated as an empty account, and a whitelist rejection names the exact
 worker IP the trader must add before retrying.
 
-The account screen tests credentials from every eligible Kraite server before
+The account screen tests credentials from the production server before
 applying them. It reports connection health separately from final trading
 readiness. A successful retest may reactivate an account that the engine
 stopped after every safe route was blocked, and clears only that account's
@@ -189,5 +207,5 @@ Drift is alert-only — it never auto-corrects. An operator decides whether the 
 
 - **[Open positions](/docs/domains/open-positions)** — every position belongs to exactly one account
 - **[Orders](/docs/domains/orders)** — order rows carry `account_id`
-- **[Athena (ingestion)](/docs/servers/athena)** — where balance / drift cron tasks run
+- **[Kraite host](/docs/servers/kraite)** — where balance and drift work runs
 - **[Components catalog](/docs/components-catalog)** — the `kraitebot/core` exchange clients that consume account credentials

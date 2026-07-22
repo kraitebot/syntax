@@ -2,9 +2,10 @@
 title: WebSocket streams
 ---
 
-Two long-lived WebSocket daemons run on **Athena** under supervisor: the **user-data stream** (per-account private channel — order fills, cancellations, account state) and the **mark-price stream** (public channel — ~1 Hz price updates for every Binance-listed symbol). Both are PHP processes built on `Ratchet/Pawl` + `React\EventLoop`, both are designed to run for days at a time, both push exchange events into the system in <100 ms — far ahead of any cron polling tick. {% .lead %}
+Two long-lived WebSocket daemons run on **Kraite** under supervisor: the **user-data stream** (per-account private channel — order fills, cancellations, account state) and the **mark-price stream** (public channel — ~1 Hz price updates for every Binance-listed symbol). Both are PHP processes built on `Ratchet/Pawl` + `React\EventLoop`, both are designed to run for days at a time, both push exchange events into the system in <100 ms — far ahead of any cron polling tick. {% .lead %}
 
-This is the **subsystem lens** view. For the box that hosts these daemons, see [Athena](/docs/servers/athena).
+This is the **subsystem lens** view. For the host that runs these daemons, see
+[Kraite](/docs/servers/kraite).
 
 ---
 
@@ -29,7 +30,7 @@ Push delivers each event in <100 ms with zero per-frame budget consumed against 
    ┌─────────────────┐         ┌──────────────┐
    │ Binance         │  push   │ user-data    │
    │ user-data WS    │────────►│ daemon (PHP) │
-   │ (per account)   │ frames  │ on Athena    │
+   │ (per account)   │ frames  │ on Kraite    │
    └─────────────────┘         └──────┬───────┘
                                       │ dispatch
                                       ▼
@@ -71,7 +72,7 @@ The normalized position-update contract is exchange-neutral. Binance is the firs
 
 ## Mark-price stream — chunked CASE/WHEN UPDATE
 
-The mark-price daemon writes the same Binance tick to every matching exchange row in a **single bulk UPDATE** — Binance, Bybit, KuCoin, Bitget — using a chunked 500-row CASE/WHEN raw query that **bypasses Eloquent** entirely. 1 Hz × 568 symbols × 4 exchanges is too hot for the observer chain.
+The mark-price daemon writes each Binance tick to matching rows on **active exchanges** in a single bulk UPDATE, using a chunked 500-row CASE/WHEN raw query that bypasses Eloquent. Production currently activates Binance only; disabled exchange evidence remains stored but is excluded from the live map.
 
 ```
    Binance tick (1 Hz, all symbols) ──► UPDATE exchange_symbols
@@ -83,7 +84,7 @@ The mark-price daemon writes the same Binance tick to every matching exchange ro
                                           WHERE id IN (...)
 ```
 
-Replication across exchanges uses `(token + quote)` matching with `token_mappers` overrides for naming divergence (BTC→XBT on KuCoin, 1000SATS→10000SATS on KuCoin / Bybit, …).
+If another exchange is re-enabled, replication uses `(token + quote)` matching with `token_mappers` overrides for naming divergence.
 
 `gc_collect_cycles()` runs after each batch — keeps the daemon's memory profile flat across multi-day uptime.
 
@@ -110,7 +111,7 @@ The user-data daemon multiplexes one WebSocket per account inside a single proce
 | Amplifier | Before | After |
 |---|---|---|
 | Notifications | one "connected" alert per account per (re)connect → 100 per restart | one boot-summary per restart; per-account connect is log-only; only connect **failures** page |
-| Reconnect burst | all N handshakes in the same tick — a thundering herd from athena's single IP, risking Binance's per-IP connection limit | connects staggered on a ~4/sec ramp (100 accounts over ~25s) |
+| Reconnect burst | all N handshakes in the same tick from one production IP | connects staggered on a controlled ramp |
 | Memory self-exit | fixed 512 MB ceiling, crossed by normal load around ~43 accounts → the daemon crash-loops, resetting everyone | ceiling scales with the live account count (≈200 MB base + 25 MB/account) so it fires only on a real leak |
 
 {% callout title="Design rule" %}
@@ -121,6 +122,6 @@ A single-process multiplexed daemon must treat "restart = N resets" as a design 
 
 ## Cross-lens links
 
-- **[Athena (ingestion)](/docs/servers/athena)** — the box hosting both daemons
+- **[Kraite host](/docs/servers/kraite)** — the host running both daemons
 - **[Horizon queues](/docs/subsystems/horizon-queues)** — `user-data-stream` consumer side
 - **[Order lifecycle](/docs/lifecycles/order-lifecycle)** — what happens after a frame turns into an `Order::updateSaving`

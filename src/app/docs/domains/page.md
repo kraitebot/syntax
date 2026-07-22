@@ -23,5 +23,5 @@ The **business-domain lens** answers "what is this business object and what stat
 ## Cross-lens entry points
 
 - **[Subsystems](/docs/subsystems/dispatch-daemon)** — *what* runs the workflows that change domain state (the daemon, the queues, the streams).
-- **[Servers](/docs/servers/architecture-overview)** — *where* each domain's data lives (MySQL on Hyperion) and where its workflows execute.
+- **[Servers](/docs/servers/architecture-overview)** — *where* MySQL and every workflow run on the single Kraite host.
 - **[Lifecycles](/docs/lifecycles/position-lifecycle)** — *how* a domain object moves through its states end-to-end.

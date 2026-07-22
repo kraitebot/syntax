@@ -2,7 +2,7 @@
 title: Scheduler
 ---
 
-The Laravel scheduler is the **time-driven entry point** to Kraite's workload. Every recurring job — kline fetches, indicator computation, listenKey refreshes, balance snapshots, candle purges, audit-log retention — flows through `routes/console.php` on `ingestion.kraite.com` (running on Athena). The scheduler does not execute trading logic itself; it dispatches into the [dispatch daemon](/docs/subsystems/dispatch-daemon) and the [Horizon queues](/docs/subsystems/horizon-queues), which do the work. {% .lead %}
+The Laravel scheduler is the **time-driven entry point** to Kraite's workload. Every recurring job — kline fetches, indicator computation, listenKey refreshes, balance snapshots, candle purges, audit-log retention — flows through `routes/console.php` on `ingestion.kraite.com`, running on Kraite. The scheduler does not execute trading logic itself; it dispatches into the [dispatch daemon](/docs/subsystems/dispatch-daemon) and the [Horizon queues](/docs/subsystems/horizon-queues), which do the work. {% .lead %}
 
 This is the **subsystem lens** view. For the persistent process that replaced one specific scheduled command (`steps:dispatch`), see [Dispatch daemon](/docs/subsystems/dispatch-daemon).
 
@@ -101,10 +101,11 @@ Since then, the health watchdog (`kraite:cron-check-system-health`) is the one s
 
 ### Recovery after warmup
 
-Athena resumes dispatch only after the workers are online. Warmup then starts
-a 10-minute recovery grace for the two health signals produced through the
-default dispatcher: account-balance history and indicators. Those timestamps
-can still describe the pre-deploy state until the first producer jobs finish.
+Warmup starts Horizon and the daemons before it resumes the scheduler on the
+same host. It then starts a 10-minute recovery grace for the two health signals
+produced through the default dispatcher: account-balance history and
+indicators. Those timestamps can still describe the pre-deploy state until the
+first producer jobs finish.
 
 The grace does not mute mark prices, queues, Redis, the database, daemons,
 scheduler liveness, or fleet heartbeats. Indicator freshness also checks the
@@ -137,5 +138,5 @@ The pre-daemon design ran `steps:dispatch` every second across 10 step-dispatche
 ## Cross-lens links
 
 - **[Dispatch daemon](/docs/subsystems/dispatch-daemon)** — the persistent loop that took over from `steps:dispatch`
-- **[Athena (ingestion)](/docs/servers/athena)** — the box this scheduler runs on
+- **[Kraite host](/docs/servers/kraite)** — where this scheduler runs
 - **[Horizon queues](/docs/subsystems/horizon-queues)** — where every dispatched job lands

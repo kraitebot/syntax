@@ -91,4 +91,4 @@ actionable portfolio-risk posture, not the diagnostic machinery behind it.
 - **[Position lifecycle](/docs/lifecycles/position-lifecycle)** — open phase consults BSCS before dispatching
 - **[Open positions](/docs/domains/open-positions)** — the domain whose creation is gated by this subsystem
 - **[Components catalog](/docs/components-catalog)** — shared building blocks behind the BSCS boundary
-- **[Pheme](/docs/servers/pheme)** — serves the bounded mobile regime summary
+- **[Kraite host](/docs/servers/kraite)** — serves the bounded mobile regime summary

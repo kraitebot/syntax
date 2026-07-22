@@ -23,11 +23,7 @@ export const navigation = [
     href: '/docs/servers',
     links: [
       { title: 'Architecture overview', href: '/docs/servers/architecture-overview' },
-      { title: 'Hyperion (database + Redis)', href: '/docs/servers/hyperion' },
-      { title: 'Athena (ingestion)', href: '/docs/servers/athena' },
-      { title: 'Pheme (web)', href: '/docs/servers/pheme' },
-      { title: 'Six trading workers', href: '/docs/servers/eos-iris' },
-      { title: 'Tyche (indicators + cronjobs)', href: '/docs/servers/tyche' },
+      { title: 'Kraite (all-in-one production)', href: '/docs/servers/kraite' },
     ],
   },
   {
