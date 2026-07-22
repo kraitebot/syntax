@@ -121,8 +121,15 @@ new exposure; they do not abandon exposure that already exists.
 
 ## Registration and connectivity
 
-Public registration accepts Binance and Bitget. Bitget credentials include a
-mandatory passphrase, and registration reads both its USDT and USDC futures
+Public self-registration is currently paused for the private beta. The public
+site replaces trial-start actions with a private-beta invitation, and the
+registration page opens a pre-addressed email to request access. All wizard
+processing routes fail before creating a draft or contacting an exchange.
+Setting `REGISTRATION_ENABLED=true` reopens the complete wizard without
+changing existing traders.
+
+When open, registration accepts Binance and Bitget. Bitget credentials include
+a mandatory passphrase, and registration reads both its USDT and USDC futures
 wallets before showing the quote choice. A registration trial starts with a
 renewal anchor, preventing a completed trial from becoming permanently
 unrenewable.
@@ -139,7 +146,9 @@ trader. It explains when automated trading starts, shows whether the exchange
 already had positions or limit orders, and repeats the required risk and
 financial-advice disclosures. A successful welcome is not repeated for another
 account owned by the same trader; failed mail can be retried. Resuming an
-existing account does not trigger this onboarding message.
+existing account does not trigger this onboarding message. Activation also
+queues the first balance snapshot immediately, so the dashboard does not wait
+for the next scheduled balance cycle.
 
 The wizard shows the minimum read and futures-trading permissions for the
 selected exchange and tells users to leave withdrawals and transfers off.
