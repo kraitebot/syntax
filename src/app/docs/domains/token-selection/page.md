@@ -91,6 +91,18 @@ live trader's tradeable scope requires. Rejected or unreviewed symbols
 never reach this chapter's scoring, however good their correlation
 looks.
 
+The backtesting console's **Immediate Tradeable** filter is the operator's
+fastest approval queue. It shows only Binance symbols that already pass every
+other live eligibility gate and would enter the tradeable pool from Approve
+alone. Approval also turns on manual enablement, so that paired state change is
+part of the prediction. A symbol with stale or missing market data, a safety
+flag, a cooldown, an inactive exchange, or another eligibility blocker stays
+out.
+
+All checked console filters narrow together. Combining Immediate Tradeable with
+Top 100 therefore gives the urgent, high-ranking approval queue rather than the
+union of both lists.
+
 The manual enablement switch belongs to the sysadmin. Opening failures
 and hourly allow-list enforcement use a separate automatic system block;
 price alignment is another independent eligibility gate. These automated
