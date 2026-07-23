@@ -121,6 +121,9 @@ checks never rewrite the manual switch.
 
 The approval proposal is stop-loss-count driven with an absolute rule:
 fewer than 5 stops → approve, 5–10 → adjust, more than 10 → reject.
+The per-direction coverage panel also shows how long ago the newest
+simulated stop-loss occurred. Recency is context for the operator; it
+does not change these approval bands or automatic eligibility.
 
 ### Active Binance reference gate
 
