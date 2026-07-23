@@ -99,6 +99,30 @@ replacement workflow, so they cannot create duplicate rungs.
 
 An active order whose price or quantity differs from its stored reference follows the separate `PrepareOrderCorrectionJob` path. That workflow restores intent and is deduplicated per order, including the exchange-specific Bitget correction class.
 
+Working values and execution values have different meanings. While an order is
+`NEW` or `PARTIALLY_FILLED`, correction compares the exchange's stated price
+and original quantity with Kraite's reference intent. Average fill price and
+executed quantity become order values only after the order is terminal. A real
+manual amendment still creates correction work; an ordinary partial fill does
+not.
+
+Before creating its child chain, `PrepareOrderCorrectionJob` rechecks that the
+position is active, the order is still working, and drift still exists. A
+terminal order, inactive position, or already-resolved drift lands as
+`Skipped`. Broken ownership or missing reference intent remains `Failed`.
+
+{% callout type="warning" title="Why stale correction is a skip" %}
+On 2026-07-22, DEXE position #33 emitted a partial-profit fill at an average of
+`4.10499999` for an order stated at `4.105`, followed immediately by the final
+fill. The average was briefly mistaken for a manual amendment, and the queued
+correction failed when it found the order already filled. No exchange mutation
+occurred, but the failed step falsely reported a trading incident.
+
+Working orders now preserve stated values across Binance push events and
+Binance/Bitget polling. If a legitimate correction becomes stale before
+pickup, it finishes as a benign skip instead of a failed workflow.
+{% /callout %}
+
 A specific high-frequency case: **manual close detection.** When a reduce-only FILL arrives for an order Kraite *doesn't own* against a position Kraite *does* own, the daemon dispatches `PreparePositionReplacementJob` immediately — not waiting for polling to catch the EXPIRED legs of the Kraite-owned orders. That workflow remains the authority for deciding whether the position is flat or still has residual exposure.
 
 The following flat `ACCOUNT_UPDATE` adds a separate risk action. Once exchange quantity is zero, `CancelPositionOpenOrdersJob` is created as a high-priority root and cancels only live DCA LIMIT orders for that position. It does not wait behind the replacement tree and does not cancel TP or SL protection. Hedge updates match the local direction; a one-way `BOTH` update derives the logical side from signed quantity. Duplicate frames collapse into the same live cancellation.

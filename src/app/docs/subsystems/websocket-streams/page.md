@@ -56,6 +56,20 @@ Not every WS frame triggers a downstream workflow. The execution-type allowlist 
 
 Production allowlist (Binance, since 2026-05-03): `TRADE` / `AMENDMENT` / `CANCELED` / `EXPIRED` / `ALGO_NEW` / `ALGO_CANCELED` / `ALGO_EXPIRED` / `ALGO_FILLED`. `NEW` / `REJECTED` / `CALCULATED` deliberately stay off — `NEW` would create defensive drift-detection noise on every placement ack, `REJECTED` is already caught synchronously at placement time, liquidations are out of scope.
 
+For `TRADE`, a partial fill updates status without replacing the order's stated
+working price or original quantity with average execution values. Those
+averages remain audit evidence until terminal status. `AMENDMENT` remains the
+explicit path for a real working-value change. Polling follows the same
+boundary, so push and fallback cannot disagree and invent correction work.
+
+{% callout type="warning" title="Execution average is not order intent" %}
+On 2026-07-22, a partial DEXE profit fill averaged `4.10499999` against a
+stated `4.105` limit. Mirroring that average into the working price briefly
+looked like a manual edit. The stream now preserves the stated value while the
+order is live; the [order lifecycle](/docs/lifecycles/order-lifecycle)
+documents how stale correction work is safely skipped.
+{% /callout %}
+
 ### Manual-flat safety branch
 
 An account-position update does not enter the order execution-type allowlist. It has one narrow independent action: when Binance reports quantity zero for a locally-open position, `ProcessUserDataEventJob` creates a high-priority `CancelPositionOpenOrdersJob` root for that position's remaining DCA LIMIT orders.
