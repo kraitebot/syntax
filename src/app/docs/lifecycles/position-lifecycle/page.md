@@ -313,15 +313,28 @@ confirm that the trader manually flattened the position.
    position; skipped when the workflow already has confirmed-flat truth
 5. `SyncPositionOrdersJob` — reconcile
 6. `QueryAccountPositionsJob` — verify
-7. `VerifyPositionResidualAmountJob` — catch partial closes
+7. `VerifyPositionResidualAmountJob` — hard gate against partial closes or
+   untrusted position evidence
 8. `UpdateRemainingClosingDataJob` — closing_price, was_fast_traded, high-profit notification, **bulk** update `reference_status = status` for all orders (single transactional UPDATE, not per-order `updateSaving` — avoids half-updated state on mid-loop failure)
 9. `UpdatePositionStatus` → `closed`
 
-### Decision: Binance `-2022` is terminal
+### Decision: Binance `-2022` requires confirmed flatness
 
-Binance's matching engine can reject a reduceOnly close when the position ledger hasn't yet reflected a fresh entry fill (TOC/TOU race), or when hedge-mode `positionSide` doesn't match actual exposure.
+Binance's `-2022 "ReduceOnly Order is rejected"` is ambiguous. It can mean
+the position is already flat, but it can also mean the close conflicts with
+another open order. The rejection alone cannot authorize terminal local state.
 
-`ClosePositionAtomicallyJob` catches `ClientException` containing `-2022`, rethrows as `NonNotifiableException` with a clear message flagging *"exchange may still be open — operator must reconcile manually"*. **No retry.** Position transitions to `failed` via the usual cancel-workflow fallback path.
+The close remains attempt-first because a positions preflight can lag exchange
+trade truth. After `-2022`, `ClosePositionAtomicallyJob` requires two valid
+account-position reads, 20 seconds apart, showing the exact symbol and logical
+direction flat. Only then is the rejection treated as idempotent success.
+Live exposure, reappearance, invalid evidence, or a failed query stops the
+close lifecycle.
+
+`VerifyPositionResidualAmountJob` is the final hard gate. Missing or malformed
+position evidence fails the lifecycle. A matching residual sends the critical
+operator notification and fails the step before `closed` can be written.
+An opposite hedge side does not count as the bot-owned position.
 
 ---
 

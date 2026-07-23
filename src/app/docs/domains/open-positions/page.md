@@ -24,7 +24,7 @@ This is the **business-domain lens** view. For the step-by-step flow that drives
 | `closed` | Closed cleanly | `closing` | `UpdatePositionStatus` final step |
 | `cancelling` | Cancel workflow running (failure path) | any open status | `CancelPositionJob` |
 | `cancelled` | Failure cleanup completed and no exchange residual remains | `cancelling` | Final verified cancel step |
-| `failed` | Cleanup could not prove a safe terminal state (or terminal exchange error like Binance `-2022`) | `cancelling`, `closing` (on `-2022`) | Side-effects: notification + auto-block of symbol |
+| `failed` | Cleanup could not prove a safe terminal state | `cancelling`, `closing` | Side-effects: notification + auto-block of symbol |
 
 Statuses `new`, `opening`, `active`, `syncing`, `waping`, `closing`, `cancelling` are **non-terminal** (treated as "open" for the duplicate-open guard). `closed`, `cancelled`, `failed` are terminal.
 
@@ -100,7 +100,12 @@ side effects ([decision detail](/docs/lifecycles/position-lifecycle#decision-fai
 - `position_opening_failed` Pushover notification fires (priority high)
 - a separate automatic system block stops the next selection tick from re-picking the same broken symbol without changing the sysadmin-owned manual switch
 
-A `-2022` from Binance during close → `status='failed'` with no retry, with the `position_residual_detected` notification routed to the operator since exchange state may diverge from DB.
+A Binance `-2022` during close is not flatness evidence. Two valid
+account-position reads, 20 seconds apart, must show the exact symbol and
+logical direction flat before the close may continue as idempotent success.
+Live, reappearing, missing, or malformed exposure evidence blocks terminal
+closure. A confirmed residual also sends `position_residual_detected` before
+the lifecycle fails.
 
 ---
 
