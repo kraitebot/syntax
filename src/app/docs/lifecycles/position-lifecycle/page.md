@@ -339,7 +339,7 @@ Canonicals dispatched during the lifecycle, each cache-throttled per position to
 | `position_pump_cooldown_triggered` | spike detected on close | high | active |
 | `position_residual_detected` | residual on exchange post-close | critical | active |
 
-`position_opened` / `position_closed` were muted on Bruno's call — too chatty on a 6×6 (12-slot) book. Re-enable by uncommenting the dispatch one-liners in `ActivatePositionJob::complete` and `UpdateRemainingClosingDataJob::computeApiable` once a digest / quiet-hours filter lands.
+`position_opened` / `position_closed` were muted on Bruno's call — too chatty on a 6×6 (12-slot) book. Their dormant dispatch paths have been removed. A future return must be an explicit digest or quiet-hours-aware feature rather than reactivating unused lifecycle methods.
 
 ---
 

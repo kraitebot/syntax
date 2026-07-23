@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.9.0] — 2026-07-23
+
+### Unified trading reference
+
+- [IMPROVED] Token-selection, market-regime, and position-lifecycle chapters
+  explain concluded directions, saved-versus-effective BSCS settings, retained
+  indicator history, and the removal of dormant routine notifications.
+- [IMPROVED] The reference documents immediate account trading stops and the
+  Immediate Tradeable approval queue.
+- [VERIFIED] All 81 static pages build successfully and changed documentation
+  routes return HTTP 200 locally.
+
 ## [0.8.0] — 2026-07-22
 
 ### Private single-host reference

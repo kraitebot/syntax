@@ -48,6 +48,12 @@ This boundary is deliberately account-scoped where account settings matter.
 The same global score can therefore produce different absolute position caps
 for two accounts while keeping identical risk ratios.
 
+The account configuration screen explains this saved-versus-effective split
+next to the form. Saved slot, leverage, and margin values remain the Calm-state
+defaults and maximums; the current BSCS band may reduce what a new position
+actually receives. Existing positions retain the values captured when they
+opened.
+
 ---
 
 ## Critical is absolute

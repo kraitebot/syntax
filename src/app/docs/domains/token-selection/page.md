@@ -103,6 +103,10 @@ All checked console filters narrow together. Combining Immediate Tradeable with
 Top 100 therefore gives the urgent, high-ranking approval queue rather than the
 union of both lists.
 
+Each row shows the token's concluded LONG or SHORT direction when available,
+so the operator can see the current trading side while reviewing the approval
+queue.
+
 The manual enablement switch belongs to the sysadmin. Opening failures
 and hourly allow-list enforcement use a separate automatic system block;
 price alignment is another independent eligibility gate. These automated
