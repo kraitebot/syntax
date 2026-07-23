@@ -225,6 +225,34 @@ Drift is alert-only — it never auto-corrects. An operator decides whether the 
 
 ---
 
+## Profit-funded milestone
+
+The Projections page estimates how much personal capital still funds an
+account. It takes the latest recorded wallet and removes exchange-reported net
+trading PnL since wallet tracking began. Deposits therefore raise the
+investment basis; withdrawals reduce it.
+
+The profit-funded milestone is twice that basis. Reaching it means the trader
+can withdraw the remaining personal investment while leaving an equal amount
+running entirely from profit. Pessimistic, neutral, and optimistic dates
+compound the current month's observed daily rates.
+
+An additional-investment input is a temporary what-if: it raises both the
+simulated wallet and the amount future profit must replace. It does not change
+the account. Missing exchange PnL is surfaced as a partial estimate rather
+than hidden.
+
+{% callout type="note" title="Why the target moves" %}
+Every new personal deposit also has to be earned back before the bot is
+profit-funded. A 200 increase therefore raises the withdrawal milestone by
+200; it is not treated as profit.
+{% /callout %}
+
+The canonical operator behavior is documented in
+`04-admin/pages/projections.md` in the raw Kraite docs.
+
+---
+
 ## Cross-lens links
 
 - **[Open positions](/docs/domains/open-positions)** — every position belongs to exactly one account
