@@ -253,6 +253,27 @@ The canonical operator behavior is documented in
 
 ---
 
+## Five-year portfolio horizon
+
+The Projections parent now separates **Monthly** account planning from a
+**Yearly** global view. Yearly starts with the combined current wallet of every
+account the trader may access and carries it through five rolling year-end
+milestones.
+
+The three paths reuse the current month's observed trading evidence:
+pessimistic follows the weakest daily return, neutral uses the midpoint, and
+optimistic follows the strongest. Each year-end shows the projected portfolio,
+profit from today, growth, and the portfolio multiple.
+
+{% callout type="note" title="Planning, not a promise" %}
+The horizon holds the selected daily rate constant. It cannot anticipate
+deposits, withdrawals, market changes, or future strategy adjustments. The
+five labels roll forward with the calendar rather than ending permanently at
+2030.
+{% /callout %}
+
+---
+
 ## Cross-lens links
 
 - **[Open positions](/docs/domains/open-positions)** — every position belongs to exactly one account
