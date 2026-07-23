@@ -91,6 +91,13 @@ live trader's tradeable scope requires. Rejected or unreviewed symbols
 never reach this chapter's scoring, however good their correlation
 looks.
 
+Before grading, the console checks that candle data is current, contiguous,
+and deep enough for the requested history window (24 months by default). A
+short but fresh series is labelled **Thin history** and triggers a worker
+top-up. If the sources cannot fill the window, the grade remains available as
+an advisory result with the warning visible; approval remains the operator's
+final decision.
+
 The backtesting console's **Immediate Tradeable** filter is the operator's
 fastest approval queue. It shows only Binance symbols that already pass every
 other live eligibility gate and would enter the tradeable pool from Approve
