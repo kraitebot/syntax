@@ -53,8 +53,8 @@ and one Horizon instance consumes every physical queue.
 Kraite is now Bruno's private bot. The former fleet optimized per-IP exchange
 capacity and multi-user availability; that cost and operational surface are no
 longer justified. One CPX32 is cheaper and easier to reason about, while its
-four cores and 8 GB are adequate for one user when Horizon is capped at
-fourteen workers.
+four cores and 8 GB are adequate for one user with the measured ceiling of
+twenty-five Horizon workers.
 {% /callout %}
 
 ## Exchange scope

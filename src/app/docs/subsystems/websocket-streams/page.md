@@ -107,8 +107,21 @@ If another exchange is re-enabled, replication uses `(token + quote)` matching w
 ## Reconnect + isolation
 
 {% callout title="Architectural decision" %}
-Both daemons share a `BaseWebsocketClient` abstract: auto-pong, exponential-backoff reconnect (`2^attempt`, max 5), per-account error isolation. A single account's listenKey expiry, transient WS error, or malformed frame does not bring down the daemon or the other accounts' streams. This makes the user-data stream the *first* layer of fault containment, not the last.
+Both daemons share a `BaseWebsocketClient` abstract: auto-pong,
+exponential-backoff reconnect (`2^attempt`, capped at 30 seconds), and
+per-account error isolation. A single account's listenKey expiry, transient
+WS error, or malformed frame does not bring down the daemon or the other
+accounts' streams. This makes the user-data stream the *first* layer of fault
+containment, not the last.
 {% /callout %}
+
+The initial subscription starts the ReactPHP event loop exactly once.
+Reconnect timers only register a replacement connection on that already
+running loop. On 2026-07-23, the reconnect path reused the blocking startup
+entry point and attempted to start the active loop again. The mark-price
+daemon exited on every first reconnect; repeated supervisor restarts then
+surfaced secondary file-descriptor failures. Keeping loop ownership at process
+startup removes that crash cycle while preserving the existing backoff.
 
 ### Reconnect-forever is availability, not recovery
 

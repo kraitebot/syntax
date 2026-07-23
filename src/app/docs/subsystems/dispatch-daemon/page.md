@@ -62,6 +62,17 @@ the priority fast-pass, every server child retains its exact worker queue, and
 the complete child fan-out commits atomically. Registration therefore cannot
 wait on a partial probe tree.
 
+## Saturation evidence
+
+Every group records a minute-level capacity signal for both the default and
+trading step sets. The record distinguishes ordinary activity from a tick
+that reached its promotion cap while runnable work remained. Only the latter
+means the dispatcher itself constrained throughput.
+
+The scheduler persists both namespaces independently. Trading groups appear
+as `trading_alpha` through `trading_kappa`, so their history cannot expire in
+Redis while the dashboard shows only default-prefix activity.
+
 ---
 
 ## Cross-lens links

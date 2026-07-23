@@ -18,8 +18,8 @@ This is the **subsystem lens**. See the
 | `positions` | `kraite-positions` | 2 | Position state machines |
 | `orders` | `kraite-orders` | 3 | Exchange order round-trips |
 | `priority` | `kraite-priority` | 1 | Urgent recovery work |
-| `cronjobs` | `kraite-cronjobs` | 2 | Scheduled lifecycle entry points |
-| `indicators` | `kraite-indicators` | 3 | Market-data and indicator work |
+| `cronjobs` | `kraite-cronjobs` | 4 | Scheduled lifecycle entry points |
+| `indicators` | `kraite-indicators` | 12 | Market-data and indicator work |
 | `user-data-stream` | `kraite-user-data-stream` | 1 | Binance account events |
 | `web` | `kraite-web` | 1 | Mail, notifications, and web jobs |
 | `kraite` | `kraite` | 1 | Direct host-targeted work |
@@ -46,13 +46,27 @@ queues under different application configuration.
 
 ## Capacity rule
 
-Fourteen workers are the starting private-use budget. Orders receive the
-largest lane because their state machines are exchange-call heavy. Indicator
-and cron work remain bounded so they cannot exhaust memory or starve position
-protection on the four-core, 8 GB host.
+Twenty-five workers are the measured private-use budget. The indicator lane
+absorbs scheduled market-data bursts, while orders and position protection
+retain dedicated consumers. Capacity remains bounded so worker concurrency
+cannot exhaust the four-core, 8 GB host.
 
 Rate limits are still coordinated in Redis. Extra processes would add local
 concurrency, not permission to exceed provider budgets.
+
+## Wait monitoring
+
+Every physical queue inherits a 60-second Horizon wait threshold from the
+same topology that creates its supervisor. This matters because Horizon
+matches thresholds by exact connection and queue name: monitoring only
+`redis:default` cannot see work waiting on `kraite-orders`,
+`kraite-indicators`, or another physical lane.
+
+{% callout title="One topology, two protections" %}
+Adding or renaming a worker queue updates both its supervisor and its
+long-wait threshold. Queue ownership and wait observability therefore cannot
+drift independently.
+{% /callout %}
 
 ## Isolation and naming
 

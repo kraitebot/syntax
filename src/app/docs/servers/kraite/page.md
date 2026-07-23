@@ -41,16 +41,17 @@ On first install, migrations and the sysadmin-only seed complete before step
 | Positions | 2 |
 | Orders | 3 |
 | Priority | 1 |
-| Cronjobs | 2 |
-| Indicators | 3 |
+| Cronjobs | 4 |
+| Indicators | 12 |
 | User data | 1 |
 | Web jobs | 1 |
 | Direct host work | 1 |
 
 {% callout title="Resource boundary" %}
-Fourteen Horizon workers are the starting ceiling for the 8 GB host. MySQL,
-Redis, PHP-FPM, and long-running daemons need reserved memory. Capacity changes
-must follow observed memory and queue pressure, not the former fleet's counts.
+Twenty-five Horizon workers are the measured ceiling for the 8 GB host. MySQL,
+Redis, PHP-FPM, and long-running daemons need reserved memory. Capacity
+changes must follow observed memory and queue pressure, not the former fleet's
+counts. Every physical lane also has a 60-second Horizon wait threshold.
 {% /callout %}
 
 ## Public and private boundaries
