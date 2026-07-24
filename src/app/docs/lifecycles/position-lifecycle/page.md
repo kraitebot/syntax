@@ -56,8 +56,11 @@ so using only currently filled quantity would understate the exposure.
 
 The value excludes fees, funding, and stop slippage. It is frozen during
 activation, before cancelled or replacement orders can make reconstruction
-ambiguous. Positions opened before this snapshot existed remain unknown
-rather than receiving an unreliable estimate.
+ambiguous. Legacy active and closed positions receive the same value only when
+their activation milestone and accepted opening-order graph are complete and
+contain no replacement lineage. The backfill reads the immutable opening
+references, never overwrites an existing value, and leaves ambiguous or failed
+positions unknown.
 
 Bitget uses a combined `PlacePositionTpslJob` that ships TP + SL in a single
 API call, so the SL-before-TP ordering doesn't apply there. Market, limit, and
