@@ -251,6 +251,12 @@ profit-funded. A 200 increase therefore raises the withdrawal milestone by
 The canonical operator behavior is documented in
 `04-admin/pages/projections.md` in the raw Kraite docs.
 
+The native iPhone app exposes the same model through **Daily profit** and
+**Year by year** sub-tabs. Daily planning selects one owned account; yearly
+planning combines every account owned by that trader. The phone keeps the
+profit-funded target and additional-investment simulation local and
+read-only.
+
 ---
 
 ## Five-year portfolio horizon

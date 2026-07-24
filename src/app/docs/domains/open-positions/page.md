@@ -58,6 +58,12 @@ selected account's latest clean close. Only `closed` history qualifies;
 `cancelled` and `failed` rows remain operational history and never become the
 trader's last successful close.
 
+The mobile Positions destination is the completed-position journal. It lists
+only clean closes for the selected owned account, newest first, with an
+expandable trade summary and cursor-based access to older rows. Open positions
+stay on the dashboard; cancelled and failed workflows do not become trader
+history.
+
 ---
 
 ## Exchange-truth safety

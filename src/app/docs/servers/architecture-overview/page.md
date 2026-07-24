@@ -88,6 +88,12 @@ kraite.app -> api.kraite.com/v1 -> admin app on kraite -> local data stores
 The token is read-only and account-scoped. The mobile app cannot place orders,
 change engine state, or cross user ownership boundaries.
 
+Its current read surfaces are the live dashboard, completed-position journal,
+per-account daily-profit calendar, combined five-year projections, and owned
+passkey management. The Positions screen is closed history; current open
+positions remain on the dashboard. Projection scenarios use the same observed
+current-month trading evidence as the admin application.
+
 ## Cross-lens links
 
 - **[Kraite host](/docs/servers/kraite)** — services and operational boundaries
