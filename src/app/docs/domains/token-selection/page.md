@@ -132,6 +132,22 @@ The per-direction coverage panel also shows how long ago the newest
 simulated stop-loss occurred. Recency is context for the operator; it
 does not change these approval bands or automatic eligibility.
 
+### One-time automatic approval pass
+
+An operator-only one-time runner can process pending Binance tokens with the
+default account configuration and daily candles. Every token goes through the
+same fetch → coverage verification → simulation lifecycle, including an
+attempt to fill missing history before a decision is made.
+
+Automation can only approve. A token must have current, contiguous coverage,
+at least 180 eligible daily starts, no skipped simulations, a matching default
+four-rung configuration, and fewer than five stop outcomes. Any failed gate
+leaves the token pending; nothing is automatically rejected.
+
+Batch processing defaults to one token at a time. Even when its non-provider
+work is made concurrent, TAAPI requests remain serialized behind the shared
+provider throttle so the one-time pass cannot widen production API pressure.
+
 ### Active Binance reference gate
 
 Listing state has two stages. A delisting marker is an early warning and

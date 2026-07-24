@@ -44,7 +44,20 @@ Triggered by `kraite:cron-create-positions`. Running autonomously since 2026-04-
 8. `DispatchLimitOrdersJob` — creates N LIMIT Orders in DB and spawns N sibling `PlaceLimitOrderJob` steps
 9. `PlaceStopLossOrderJob` — SL anchored to last limit rung. **Placed FIRST so the position is protected before the TP can fill on a fast-trade.** See "SL-before-TP invariant" below.
 10. `PlaceProfitOrderJob` — initial TP based on `opening_price`
-11. `ActivatePositionJob` — validates all orders placed, sets `status='active'`
+11. `ActivatePositionJob` — validates all orders placed, snapshots the
+    maximum loss at the opening stop, then sets `status='active'`
+
+### Maximum pain snapshot
+
+Activation records the position's planned worst-case gross loss if price
+reaches its opening stop. The calculation uses the actual market fill plus
+every accepted ladder rung. A move to the stop must cross those rung prices,
+so using only currently filled quantity would understate the exposure.
+
+The value excludes fees, funding, and stop slippage. It is frozen during
+activation, before cancelled or replacement orders can make reconstruction
+ambiguous. Positions opened before this snapshot existed remain unknown
+rather than receiving an unreliable estimate.
 
 Bitget uses a combined `PlacePositionTpslJob` that ships TP + SL in a single
 API call, so the SL-before-TP ordering doesn't apply there. Market, limit, and
