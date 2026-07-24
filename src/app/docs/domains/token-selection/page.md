@@ -98,6 +98,11 @@ top-up. If the sources cannot fill the window, the grade remains available as
 an advisory result with the warning visible; approval remains the operator's
 final decision.
 
+The result summary also shows the largest price amplitude observed inside one
+UTC calendar day. It compares that day's highest candle high with its lowest
+candle low and names the day. This gives the operator volatility context
+without changing the grade, proposal, or approval thresholds.
+
 The backtesting console's **Immediate Tradeable** filter is the operator's
 fastest approval queue. It shows only Binance symbols that already pass every
 other live eligibility gate and would enter the tradeable pool from Approve
