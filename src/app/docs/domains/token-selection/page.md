@@ -100,8 +100,10 @@ final decision.
 
 The result summary also shows the largest price amplitude observed inside one
 UTC calendar day. It compares that day's highest candle high with its lowest
-candle low and names the day. This gives the operator volatility context
-without changing the grade, proposal, or approval thresholds.
+candle low, normalizes that spread by the previous daily close, and names the
+day. The first available day has no prior close and is excluded. This gives the
+operator volatility context without changing the grade, proposal, or approval
+thresholds.
 
 The backtesting console's **Immediate Tradeable** filter is the operator's
 fastest approval queue. It shows only Binance symbols that already pass every
