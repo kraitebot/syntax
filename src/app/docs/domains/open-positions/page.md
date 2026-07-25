@@ -64,6 +64,19 @@ expandable trade summary and cursor-based access to older rows. Open positions
 stay on the dashboard; cancelled and failed workflows do not become trader
 history.
 
+### Portfolio disaster view
+
+The trader dashboard combines every open position's frozen maximum-pain
+snapshot into one all-stop disaster amount. It also shows that loss as a
+percentage of the current portfolio, answering how much of the wallet would be
+lost if every managed position reached its opening stop.
+
+The total stays unknown when any open position lacks a trustworthy frozen
+snapshot; showing a known subtotal would understate risk. Beside the realised
+daily result, the dashboard separately sums current unrealised PnL across the
+same open positions. Neither summary recalculates position history or changes
+trading behavior.
+
 ---
 
 ## Exchange-truth safety
