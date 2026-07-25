@@ -76,7 +76,17 @@ The gate logic is simply `cooldown > none`: while a Critical-armed cooldown is i
 
 ## Staleness
 
-A regime snapshot has a freshness budget (`freshnessMaxSeconds`, default 6900 s — just under 2 h). If the latest snapshot is older than the budget, `isStale()` returns true. The intent: a stale snapshot should not gate trading decisions in either direction. Stale → fall back to "no block, but flag operator visibility". Liveness of the regime compute is itself a 3-tier signal on the admin dashboard: fresh / aging / stale.
+A regime snapshot has a freshness budget (`freshnessMaxSeconds`, default 6900
+s — just under 2 h). If the latest snapshot is older than the budget,
+`isStale()` returns true. The intent: a stale snapshot should not gate trading
+decisions in either direction. Stale → fall back to "no block, but flag
+operator visibility". Liveness of the regime compute is itself a 3-tier signal
+on the admin dashboard: fresh / aging / stale.
+
+The sysadmin Runtime Settings page can replace that budget on the shared
+singleton. The database value takes effect on the next BSCS decision without a
+release. The score, band, sync time, and cooldown shown beside it remain
+system-owned and read-only.
 
 ## Fast market-shock detector
 

@@ -57,6 +57,23 @@ hourly runs create zero leverage-bracket steps.
 
 ---
 
+## Runtime computation and retention controls
+
+The sysadmin Runtime Settings page stores three scheduler-facing decisions on
+the shared singleton:
+
+- whether correlation computation produces fresh values;
+- whether elasticity computation produces fresh values;
+- how long a cleanly closed position keeps its diagnostic trail.
+
+These values affect future scheduled work; they do not cancel work already in
+flight. A positive trail-retention window defers cleanup until the daily
+position-trail sweep. A zero-hour window preserves immediate cleanup when the
+position closes. Returning a nullable control to **inherit** restores its
+configured default.
+
+---
+
 ## What "cooldown-gated" means
 
 `routes/console.php` registers step-producing commands only while the

@@ -80,6 +80,20 @@ Fallback mode skips this — it accepts wrong-sign-correlation candidates becaus
 
 ---
 
+## Operator-selected correlation series
+
+Runtime Settings lets the sysadmin choose which available correlation series
+token selection reads: rolling, Pearson, or Spearman. The database choice
+replaces the configured default on the next selection read. Returning it to
+**inherit** restores that default.
+
+Separate correlation and elasticity computation switches decide whether
+future scheduled calculations produce fresh inputs. They do not change the
+ranking formula, recompute an existing score, or rewrite a position that has
+already opened.
+
+---
+
 ## Who's in the candidate pool at all — the backtest approval gate
 
 Everything above ranks symbols that are *already eligible*. Eligibility

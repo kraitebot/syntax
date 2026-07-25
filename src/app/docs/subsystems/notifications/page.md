@@ -11,6 +11,19 @@ This is the **subsystem lens** — the delivery machinery. For the per-canonical
 
 ---
 
+## Global delivery permission
+
+Before throttling, thresholds, or channel preferences matter, the shared
+Kraite singleton supplies the global delivery permission. A sysadmin can
+enable or suppress that pipeline from Runtime Settings; returning the control
+to **inherit** restores the configured default.
+
+This control changes future delivery attempts immediately. It does not modify
+channel credentials, rewrite a trader's preferences, or resend previously
+suppressed messages.
+
+---
+
 ## The two gates, in order
 
 Every notification occurrence runs this path:
