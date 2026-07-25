@@ -132,6 +132,45 @@ exchange exposure and follows normal empty cleanup. If the exchange already
 accepted an entry, reconciliation continues so live exposure is never
 abandoned.
 
+## Account control from the phone
+
+The native iPhone app now carries the same account configuration the browser
+screen owns: account name, portfolio and trading quote currencies, profit
+target, stop-loss, and per-direction position slots, leverage, and margin. It
+also carries the immediate stop on opening new positions, separate from saving
+any other edit.
+
+The phone offers only curated values, never free-typed numbers, so a
+risk-relevant setting cannot leave the tested envelope from a device.
+
+The same locks the browser enforces are shown rather than hidden:
+
+| Condition | What the trader can do |
+|---|---|
+| Account not yet connected | Nothing is editable; the screen explains why |
+| Trading enabled, or positions open | Quote currencies lock; everything else stays editable |
+| Subscription inactive | Open positions stay managed; trading cannot be switched on |
+| Connection unhealthy | Trading cannot be switched on; turning it off always works |
+
+Saving affects positions opened afterwards. Positions already open keep the
+values they were opened with, so a mid-flight trade never changes shape under
+the engine.
+
+{% callout type="note" title="Why mobile writes are a separate permission" %}
+Reads and account writes are gated on different abilities, so a device token
+can be issued that sees everything and changes nothing. A token issued before
+account editing existed keeps working for reads and is refused on writes; the
+app detects that refusal and asks the trader to sign in once more instead of
+failing silently.
+
+The sysadmin cross-user override the browser grants is deliberately switched
+off on every mobile route. An administrator holding the phone sees and edits
+only the accounts they own — a lost phone is never a fleet-wide key.
+{% /callout %}
+
+The canonical readiness rules stay in **Trading readiness** above; the phone
+surfaces them, it does not define a second set.
+
 ## Registration and connectivity
 
 Public self-registration is currently paused for the private beta. The public
