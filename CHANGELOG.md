@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.10.0] — 2026-07-25
+
+### Trading-safety reference
+
+- [CORRECTED] Position closing now documents exposure-first protection
+  ordering and WAP's Kraite-owned exposure boundary.
+- [CORRECTED] Dispatcher, private-stream, scheduler, and market-shock chapters
+  match active-group ticking, original-lane recovery, transport heartbeats,
+  asynchronous rejection handling, and downside-only shock evidence.
+- [VERIFIED] All 81 static pages build successfully.
+
 ## [0.9.0] — 2026-07-23
 
 ### Unified trading reference

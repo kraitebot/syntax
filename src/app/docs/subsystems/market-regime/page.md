@@ -78,6 +78,19 @@ The gate logic is simply `cooldown > none`: while a Critical-armed cooldown is i
 
 A regime snapshot has a freshness budget (`freshnessMaxSeconds`, default 6900 s — just under 2 h). If the latest snapshot is older than the budget, `isStale()` returns true. The intent: a stale snapshot should not gate trading decisions in either direction. Stale → fall back to "no block, but flag operator visibility". Liveness of the regime compute is itself a 3-tier signal on the admin dashboard: fresh / aging / stale.
 
+## Fast market-shock detector
+
+The one-minute shock detector complements the hourly score with live
+mark-price samples and a 15-minute-candle fallback. Candle evidence older than
+30 minutes is unavailable, not a zero move. Missing metrics remain unavailable
+in alerts instead of becoming reassuring zeros.
+
+The correlation rule is downside-only: high cross-market correlation fires
+only when BTC is also down by the configured magnitude. A correlated BTC rally
+cannot arm a crash cooldown. Constant-price series have zero variance and are
+excluded from the correlation mean rather than counted as zero-correlation
+evidence.
+
 ---
 
 ## Trader visibility

@@ -40,18 +40,30 @@ The daemon doesn't *know* about position semantics — it dispatches the block a
   visible together. A retry sees the populated block and becomes a no-op.
 - **Safe stale recovery** — populated parent trees never rerun, including when
   all children are terminal. A genuinely empty child block remains repairable.
+  Stale Dispatched leaves are requeued at high dispatcher priority on their
+  original worker lane; a repeated stall escalates.
 - **Bounded scans** — dispatch and recovery inspect actionable failures and
   children instead of repeatedly walking settled history.
+- **Priority before cleanup** — runnable high-priority trading work is claimed
+  before a cleanup phase can end the tick.
 - **Queue ownership** — high-priority work keeps a valid explicit server queue;
   only missing or invalid queues fall back to the priority lane.
 - **Survives Horizon restarts** — daemon and Horizon are independent
   supervisors; restarting Horizon does not interrupt the dispatch loop
+- **Honest deployment drain** — cooldown totals every physical queue declared
+  by the same worker topology, so an empty legacy logical queue cannot hide
+  pending `kraite-*` work
 
 ---
 
 ## Idle gating — DB truth, not flag files
 
-When no work exists the daemon idles on a short sleep instead of ticking. The idle decision is made **per prefix** (default + trading) against the shared database — a sub-millisecond `EXISTS` over the non-terminal step states — and each prefix only ticks when it actually has active steps.
+When no work exists the daemon idles on a short sleep instead of ticking. The
+idle decision is made **per prefix** (default + trading) against the shared
+database. `activeGroups()` returns the distinct groups with Pending,
+Dispatched, or Running work, and each prefix ticks only those groups. An
+exception in one group is reported and contained so the remaining active
+groups still run.
 
 {% callout type="warning" title="Why not the activation flag files (incident 2026-06-05)" %}
 The dispatcher framework keeps per-prefix activation flag files, touched whenever a step is created. The daemon originally gated its whole loop on the **default-prefix flag only** — so the moment default-prefix work drained, the daemon slept with trading steps still pending. Trading ladders crawled at one index hop per minute, woken only when the next scheduler cron recreated the flag. The flags are also per-machine: a child step created on a worker box touches the worker's filesystem, never Athena's — useless as a fleet-wide signal. The shared DB is correct on both axes, which is why the daemon's gate reads it directly. Caught during the first live trading smoke test; fixed in core v1.51.4.

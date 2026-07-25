@@ -54,7 +54,12 @@ A 5-minute polling cron (`kraite:cron-sync-orders`) still runs as a **safety net
 
 Not every WS frame triggers a downstream workflow. The execution-type allowlist is gated by `kraite.user_data_stream.<exchange>.dispatched_executions`. Empty list = pure shadow mode (every frame audited into `api_data_stream`, no `Order::updateSaving`). Each execution type is enabled via config flip after its OrderObserver workflow has been verified end-to-end against live frames.
 
-Production allowlist (Binance, since 2026-05-03): `TRADE` / `AMENDMENT` / `CANCELED` / `EXPIRED` / `ALGO_NEW` / `ALGO_CANCELED` / `ALGO_EXPIRED` / `ALGO_FILLED`. `NEW` / `REJECTED` / `CALCULATED` deliberately stay off — `NEW` would create defensive drift-detection noise on every placement ack, `REJECTED` is already caught synchronously at placement time, liquidations are out of scope.
+Production allowlist (Binance): `TRADE` / `AMENDMENT` / `CANCELED` /
+`EXPIRED` / `REJECTED` / `ALGO_NEW` / `ALGO_CANCELED` / `ALGO_EXPIRED` /
+`ALGO_FILLED`. `NEW` and `CALCULATED` deliberately stay off — placement
+acknowledgements add noise and liquidations are out of scope. `REJECTED`
+remains enabled because an asynchronous exchange rejection must reach the same
+replacement/correction lifecycle as polling.
 
 For `TRADE`, a partial fill updates status without replacing the order's stated
 working price or original quantity with average execution values. Those
@@ -140,6 +145,12 @@ The user-data daemon multiplexes one WebSocket per account inside a single proce
 | Notifications | one "connected" alert per account per (re)connect → 100 per restart | one boot-summary per restart; per-account connect is log-only; only connect **failures** page |
 | Reconnect burst | all N handshakes in the same tick from one production IP | connects staggered on a controlled ramp |
 | Memory self-exit | fixed 512 MB ceiling, crossed by normal load around ~43 accounts → the daemon crash-loops, resetting everyone | ceiling scales with the live account count (≈200 MB base + 25 MB/account) so it fires only on a real leak |
+
+Each account persists `last_frame_at` at most once per 30 seconds on protocol
+pings as well as data frames. This makes a quiet account healthy without fake
+trading traffic. The five-minute listen-key watchdog alerts after 15 minutes
+without either signal. Reconnect-storm counters also reset only on ping or
+data, never on a handshake that immediately dies.
 
 {% callout title="Design rule" %}
 A single-process multiplexed daemon must treat "restart = N resets" as a design constraint from day one — bound the blast radius (summary notifications, staggered reconnect, scale-aware limits) *before* the account count grows. A fixed resource ceiling on a per-account-scaling daemon is a latent crash-loop. A future step is to shard the daemon into several processes of fewer accounts each, so one restart only resets a shard.

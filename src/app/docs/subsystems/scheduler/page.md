@@ -16,7 +16,7 @@ This is the **subsystem lens** view. For the persistent process that replaced on
 | `steps:recover-stale` (default + trading) | 1 min | no | Recover stale steps, locks, and stalled groups |
 | `kraite:cron-sync-orders` | 5 min | yes | Polling fallback for the user-data WS daemon |
 | `kraite:cron-refresh-binance-listen-keys` | 1 min | no | Keep Binance listenKeys alive past 60-min auto-expiry |
-| `kraite:cron-check-binance-listen-keys-stale` | 5 min | no | Detect missing or stale listen-key state |
+| `kraite:cron-check-binance-listen-keys-stale` | 5 min | no | Detect missing/stale listen keys or a per-account socket heartbeat older than 15 min |
 | `kraite:cron-check-system-health` | 7 min | no | Unified health + maintenance sentinel |
 | `kraite:cron-check-drifts` | 5 min | yes | Position drift, protection, and money guard |
 | `kraite:monitor-narrate` | minutes 7, 27, 47 | yes | Document an already-open money-guard incident |

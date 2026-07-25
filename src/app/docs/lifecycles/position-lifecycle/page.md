@@ -288,6 +288,11 @@ Sign depends on direction. Then `apiModify(target_qty, target_price)` on the exi
 
 Throws if exchange `positionAmt` < local sum of MARKET + FILLED LIMIT quantities. Means Binance hasn't yet committed the triggering fill into `breakEvenPrice`. Step retries with a fresh snapshot rather than computing TP against stale breakeven.
 
+If the exchange position is larger than Kraite's FILLED entry ledger, the
+position contains manual or co-owned exposure. WAP then derives quantity and
+weighted entry from Kraite-owned fills only; it never expands this bot
+position's take-profit to cover someone else's exposure.
+
 WAP also requires the exact symbol + logical-side row from a validated snapshot. Missing, flat, or opposite-side data cannot resize the TP and instead enters the confirmed-flat safety path. Directional one-way rows remain valid even if the stored hedge-mode flag is stale.
 
 ### Decision: strict doubleCheck (2026-04-21)
@@ -323,16 +328,19 @@ confirm that the trader manually flattened the position.
 ### Flow (ClosePositionJob child block)
 
 1. `UpdatePositionStatus` → `closing`
-2. `CancelPositionOpenOrdersJob` — cancel remaining LIMITs
-3. `CancelAlgoOpenOrdersJob` — cancel SL
-4. `ClosePositionAtomicallyJob` — reduceOnly market close for any residual
+2. `ClosePositionAtomicallyJob` — reduceOnly market close for any residual
    position; skipped when the workflow already has confirmed-flat truth
-5. `SyncPositionOrdersJob` — reconcile
-6. `QueryAccountPositionsJob` — verify
-7. `VerifyPositionResidualAmountJob` — hard gate against partial closes or
+3. `CancelPositionOpenOrdersJob` — remove remaining LIMIT and algo protection
+   only after exchange exposure is gone
+4. `SyncPositionOrdersJob` — reconcile
+5. `QueryAccountPositionsJob` — verify
+6. `VerifyPositionResidualAmountJob` — hard gate against partial closes or
    untrusted position evidence
-8. `UpdateRemainingClosingDataJob` — closing_price, was_fast_traded, high-profit notification, **bulk** update `reference_status = status` for all orders (single transactional UPDATE, not per-order `updateSaving` — avoids half-updated state on mid-loop failure)
-9. `UpdatePositionStatus` → `closed`
+7. `UpdateRemainingClosingDataJob` — closing_price, was_fast_traded, high-profit notification, **bulk** update `reference_status = status` for all orders (single transactional UPDATE, not per-order `updateSaving` — avoids half-updated state on mid-loop failure)
+8. `UpdatePositionStatus` → `closed`
+
+Exposure is always removed before protection. If the exchange close fails,
+the current stop-loss and take-profit stay armed.
 
 ### Decision: Binance `-2022` requires confirmed flatness
 
