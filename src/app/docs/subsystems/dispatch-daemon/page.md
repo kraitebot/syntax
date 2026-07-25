@@ -51,8 +51,9 @@ The daemon doesn't *know* about position semantics — it dispatches the block a
 - **Survives Horizon restarts** — daemon and Horizon are independent
   supervisors; restarting Horizon does not interrupt the dispatch loop
 - **Honest deployment drain** — cooldown totals every physical queue declared
-  by the same worker topology, so an empty legacy logical queue cannot hide
-  pending `kraite-*` work
+  by the same worker topology and counts ready plus worker-reserved jobs, so an
+  empty legacy logical queue or ready list cannot hide pending or in-flight
+  `kraite-*` work. Future delayed jobs resume after warmup.
 
 ---
 
