@@ -66,16 +66,17 @@ history.
 
 ### Portfolio disaster view
 
-The trader dashboard combines every open position's frozen maximum-pain
-snapshot into one all-stop disaster amount. It also shows that loss as a
+The trader dashboard groups every open position's frozen maximum-pain snapshot
+into SHORT and LONG all-stop disaster amounts. Each direction also shows its
 percentage of the current portfolio, answering how much of the wallet would be
-lost if every managed position reached its opening stop.
+lost if that side's managed positions reached their opening stops.
 
-The total stays unknown when any open position lacks a trustworthy frozen
-snapshot; showing a known subtotal would understate risk. Beside the realised
-daily result, the dashboard separately sums current unrealised PnL across the
-same open positions. Neither summary recalculates position history or changes
-trading behavior.
+A direction stays unknown when any position on that side lacks a trustworthy
+frozen snapshot; showing a known subtotal would understate risk. A position
+that cannot be grouped safely keeps both directions unknown. Beside the
+realised daily result, the dashboard separately sums current unrealised PnL
+across the same open positions. Neither summary recalculates position history
+or changes trading behavior.
 
 ---
 
