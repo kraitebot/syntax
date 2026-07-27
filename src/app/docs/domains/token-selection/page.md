@@ -199,6 +199,42 @@ delisted Binance sibling is invalid evidence for selecting a new token,
 but it may still be used to monitor an already-open same-asset position.
 Delisting never switches off the duties attached to existing exposure.
 
+### Exchange renames: same coin, new ticker (core v1.86.0)
+
+When an exchange renames a contract (Binance TONUSDT → GRAMUSDT,
+July 2026), the coin's identity is its CoinMarketCap id — the ticker is
+only a label. Discovery refreshes catalogue labels at link time, and a
+batched reconciliation inside the hourly refresh keeps labels current
+for coins linked before a rebrand. A refreshed label also disarms
+ticker recycling: the abandoned name stops matching anything.
+
+A rename is detected at the identity-link moment: a fresh listing that
+resolves to the same coin as a recently vanished sibling on the same
+exchange and quote. Recency comes from the audit trail (when the
+delisting flag flipped, 3-day window). Inside the window the old
+listing retires under a one-way `renamed` block, the successor records
+its ancestry, and the operator is alerted — with any open positions on
+the retired listing counted and held for a human decision, never
+auto-migrated. Outside the window nothing is auto-processed; the
+operator gets a "suspected rename" alert and decides.
+
+The successor then re-earns tradability through the normal backtest
+approval gate. Data providers restart the coin's history at the rename,
+so it sits rejected until enough new-name data accumulates — that
+rejection is the system telling the truth about its data, not a bug.
+
+{% callout title="Retired listings are sealed archives (core v1.86.0)" %}
+Backtesting verdicts fan out to every listing of the same coin. Without
+an exclusion, the successor's honest post-rename rejection would fan
+onto the retired listing, flip its frozen status, and feed the nightly
+purge that deletes rejected coins' candles — destroying the only
+surviving copy of the coin's pre-rename price history. Retired listings
+are therefore invisible to the direction workflow, the candle fetcher,
+the Taapi availability touch, the verdict fan-out, and the mass
+indicator reset, and the ancestry link is delete-protected so the
+archive row can never be removed while a successor references it.
+{% /callout %}
+
 {% callout title="Grade can't contradict the decision rule (core v1.61.0)" %}
 The letter grade weighs stops as a percentage of resolved sims, so a
 large sample diluted absolute failures — 16 stop-loss hits over ~1400
