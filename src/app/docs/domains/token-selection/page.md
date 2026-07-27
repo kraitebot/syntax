@@ -199,7 +199,7 @@ delisted Binance sibling is invalid evidence for selecting a new token,
 but it may still be used to monitor an already-open same-asset position.
 Delisting never switches off the duties attached to existing exposure.
 
-### Exchange renames: same coin, new ticker (core v1.86.0)
+### Exchange renames: same coin, new ticker (core v1.87.0)
 
 When an exchange renames a contract (Binance TONUSDT → GRAMUSDT,
 July 2026), the coin's identity is its CoinMarketCap id — the ticker is
@@ -223,7 +223,7 @@ approval gate. Data providers restart the coin's history at the rename,
 so it sits rejected until enough new-name data accumulates — that
 rejection is the system telling the truth about its data, not a bug.
 
-{% callout title="Retired listings are sealed archives (core v1.86.0)" %}
+{% callout title="Retired listings are sealed archives (core v1.87.0)" %}
 Backtesting verdicts fan out to every listing of the same coin. Without
 an exclusion, the successor's honest post-rename rejection would fan
 onto the retired listing, flip its frozen status, and feed the nightly
