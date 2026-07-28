@@ -106,12 +106,27 @@ evidence.
 ## Trader visibility
 
 The iPhone dashboard exposes the same global regime truth as one bounded,
-read-only KPI tile: score, band, block state, freshness, status, and configured
-block threshold. The visual scale runs continuously from Calm through Critical
-and marks both the current score and block threshold. It also shows effective
-versus configured LONG/SHORT capacity for the selected account. Sub-signal
-composition and cooldown internals remain operator-only; the trader needs the
-actionable portfolio-risk posture, not the diagnostic machinery behind it.
+read-only KPI tile: score, band, block state, freshness, and configured block
+threshold on a continuous Calm→Critical scale that marks both the current
+score and the threshold. It also shows effective versus configured LONG/SHORT
+capacity for the selected account.
+
+The tile narrates the current state in plain English rather than a terse
+status code. Each pause source tells its own story — the fast shock breaker
+("a sudden sharp market drop tripped the safety brake"), the slow score gate
+("market stress climbed past the safety limit"), and the error-storm monitor
+latch ("the exchange kept rejecting our requests") — always adding that open
+positions keep managing themselves. A resume line promises when new trades
+come back: the two cooldown sources carry the remaining countdown, while the
+monitor latch points at connection health because it never expires on its own.
+
+The tile also carries the assessment cadence: when the market was last
+checked and a countdown to the next hourly recompute, served by the API as a
+pre-phrased field so the phone never re-derives schedule facts. The
+five-sub-signal breakdown unfolds when the market leaves Calm or opens are
+paused — a calm board with every signal quiet is exactly what tells the
+trader the pause came from Kraite's own side, not the market — and each row
+opens a plain-English explanation sheet with the raw reading and fired state.
 
 ---
 
