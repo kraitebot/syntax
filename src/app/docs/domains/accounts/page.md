@@ -264,6 +264,43 @@ Drift is alert-only — it never auto-corrects. An operator decides whether the 
 
 ---
 
+## Performance measurement
+
+Every percentage Kraite publishes about an account answers one question: what
+did the *trading* do? Money the trader pays in or takes out changes how many
+euros are on the table and must never change the rate.
+
+| Figure | Denominator | Effect of a transfer |
+|---|---|---|
+| Daily rate | The wallet that day opened with | Absorbed from the next day |
+| Window return | The window's daily rates chained (time-weighted) | None |
+| Scenario band | Those same daily rates, worst / midpoint / best | Cannot widen the band |
+| Monthly + yearly outlook | Delivered so far, chained with growth on today's wallet | Raises euros only |
+| Portfolio 24h delta | The wallet held a day earlier, against traded PnL only | None |
+
+Day one of a window anchors on its own opening snapshot; every later day
+anchors on the previous day's closing balance. So an account that doubles its
+capital and then earns double the euros reports the *same* daily rate it
+earned before — which is the honest answer.
+
+A transfer landing mid-day is invisible to that day's own opening balance, so
+the transfer day itself can read slightly hot. Every later day is clean.
+
+{% callout type="warning" title="Why a frozen denominator was wrong" %}
+Until 2026-07-29 the daily rates, window ROI, and the monthly outlook all
+divided by a single balance captured at the start of the window. A 1,100
+deposit into a 3,900 account exposed the flaw three ways at once: the rest of
+the month's rates read about 28% hot because bigger-capital euros were still
+divided by the pre-transfer wallet; window ROI compared a post-transfer
+balance against a pre-transfer one; and the monthly outlook — including the
+number published on the public site — folded the transferred money straight
+into "return". Rates are now anchored per day and linked geometrically, so
+capital and performance can no longer be confused.
+{% /callout %}
+
+Both `admin.kraite.com` and the public site read this one engine, so the two
+products cannot drift on what a return means.
+
 ## Profit-funded milestone
 
 The Projections page estimates how much personal capital still funds an
