@@ -127,6 +127,9 @@ five-sub-signal breakdown unfolds when the market leaves Calm or opens are
 paused — a calm board with every signal quiet is exactly what tells the
 trader the pause came from Kraite's own side, not the market — and each row
 opens a plain-English explanation sheet with the raw reading and fired state.
+The tile collapses like the position cards: folded, it keeps the band, score,
+story, and resume line; expanding reveals the cadence, caps, scale, and
+signal rows.
 
 ---
 
