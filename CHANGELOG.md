@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.12.0] — 2026-07-29
+
+### Which day a figure belongs to
+
+- [ADDED] Accounts chapter now explains that daily figures come from the
+  exchange's own income ledger, each record filed on the day the exchange
+  booked it, versus a trade's whole result filed under its close date.
+  Covers positions spanning midnight and the fallback for windows older
+  than the ledger.
+- [ADDED] Trading-day basis: what it is, that it follows the trader's
+  exchange rather than their travel, and why countries spanning several
+  offsets are never offered.
+- [ADDED] Market-regime tile documented from the trader's angle, including
+  its collapsible state.
+
+### One address, one exchange budget
+
+- [ADDED] Kraite server chapter now covers the shared per-address exchange
+  budget: what draws on it, why endpoints are not priced alike, and the two
+  gates that protect it. Includes the 2026-07-29 incident as the rationale
+  for why a second, per-call gate exists at all.
+
+- [VERIFIED] Static build green; refreshed chapters return 200 with the new
+  content present.
+
 ## [0.10.0] — 2026-07-25
 
 ### Trading-safety reference

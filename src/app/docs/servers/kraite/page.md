@@ -54,6 +54,36 @@ changes must follow observed memory and queue pressure, not the former fleet's
 counts. Every physical lane also has a 60-second Horizon wait threshold.
 {% /callout %}
 
+## One address, one exchange budget
+
+Every exchange call leaves from this box's single public address, and Binance
+meters that address rather than the account behind it: 2,400 units of request
+weight per minute, shared by everything. Placing an order, syncing a position,
+protecting one, and backfilling last week's bookkeeping all draw from the same
+pool. Endpoints are not priced alike — an earnings-history call costs thirty
+times a plain order query — so a cheap-looking background sweep can drain the
+pool that live trading needs.
+
+Two gates protect it. Before a job starts, one asks whether the budget can
+afford it and reschedules the job if not, which costs nothing. Before each
+individual call leaves, a second pauses briefly when the budget is tight and
+then lets the call through.
+
+{% callout type="warning" title="Why the second gate exists" %}
+On 2026-07-29 a diagnostic sweep asked for earnings history one symbol at a
+time and spent the whole minute's budget in 83 seconds. The meter tracked it
+exactly and nothing consulted the meter: the first gate runs once per job, so
+a loop is checked for its opening call and unmetered afterwards, and anything
+that is not a job — a scheduled command, a daemon, an operator running a
+script — was never asked at all.
+
+The second gate pauses rather than refuses. A job can be rescheduled for free,
+but a call already in flight cannot, and refusing it would break work that
+succeeds today — including the minute-by-minute refresh that keeps the Binance
+live feed alive. A ban is the exception and stops calls outright, because
+Binance bans last from two minutes to three days.
+{% /callout %}
+
 ## Public and private boundaries
 
 Nginx exposes SSH, HTTP, and HTTPS only. MySQL and Redis never bind publicly.

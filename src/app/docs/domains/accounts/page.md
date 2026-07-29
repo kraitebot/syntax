@@ -291,6 +291,38 @@ Changing the basis re-slices history rather than rewriting it — trades near
 the old boundary move to the adjacent day. Public aggregate figures span
 many traders, so they have no single basis to inherit and stay on UTC.
 
+Arriving in a new country offers the local basis once, and never applies it:
+the basis matches the trader's *exchange*, which does not travel with them.
+Countries spanning several offsets are never offered at all.
+
+## Which day a figure belongs to
+
+Daily figures come from the exchange's own income ledger — realised PnL,
+commission and funding, each booked on the day the exchange charged it —
+mirrored into `account_incomes` by a cron that asks for a whole account in
+one paginated call.
+
+| Question | Source |
+|---|---|
+| What did this trade earn in total? | `positions.pnl`, filed under its close date |
+| What did the account earn on this day? | income ledger, each record on its own booking day |
+
+A position spanning midnight leaves its opening fee on the first day and its
+result on the second. Funding on a position still open counts the moment it
+is charged. Windows older than the ledger fall back to close-date grouping,
+so historical months keep the only figures that exist for them.
+
+{% callout type="warning" title="Why close-date grouping was not enough" %}
+Filing a trade's whole result under its close date is right for a trade and
+wrong for a day. On 2026-07-29 it read +11.51 here against +9.83 on the
+exchange for the same hours — the gap was the opening commission and
+overnight funding of positions that had crossed midnight.
+
+The sync deliberately asks per *account*, never per symbol: the per-symbol
+shape tripped Binance's 2,400/minute per-IP limit that same day, and the
+trading engine shares that limit.
+{% /callout %}
+
 ## Performance measurement
 
 Every percentage Kraite publishes about an account answers one question: what
