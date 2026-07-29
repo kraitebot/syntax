@@ -264,6 +264,33 @@ Drift is alert-only — it never auto-corrects. An operator decides whether the 
 
 ---
 
+## Trading day basis
+
+Every "today" and every calendar square is drawn on the trader's own day
+basis — a fixed UTC offset stored on their profile, mirroring the setting
+their exchange already has (Binance: **Trade Preference → Change Basis**).
+Default is UTC.
+
+| Follows the basis | Stays UTC |
+|---|---|
+| Daily P&L tile, calendar days, scenario band, month edges, header clock | Every stored timestamp: positions, orders, steps, audit history |
+
+{% callout type="note" title="Why a fixed offset and not a named zone" %}
+The setting exists so Kraite and the exchange agree on which trades belong
+to today, and the exchange stores a fixed offset — a named zone would drift
+away from it at every daylight-saving change. A fixed offset also works on
+the production host, whose MySQL timezone tables are not loaded, making
+`CONVERT_TZ` unusable.
+
+Discovered 2026-07-29: at 23:38 UTC the dashboard totalled a full UTC day
+(+$4.72) while the trader's UTC+2 exchange had been counting its own day
+for 1h38m. Same trades, two different questions.
+{% /callout %}
+
+Changing the basis re-slices history rather than rewriting it — trades near
+the old boundary move to the adjacent day. Public aggregate figures span
+many traders, so they have no single basis to inherit and stay on UTC.
+
 ## Performance measurement
 
 Every percentage Kraite publishes about an account answers one question: what
