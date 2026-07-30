@@ -3,9 +3,8 @@ title: Notifications
 ---
 
 Operator alerts and trader messages pass through the same delivery machinery.
-The **Throttler** suppresses repeats, while the optional **Threshold** can
-require recurrence before an operator alert is delivered. Together they keep
-Kraite quiet on noise without losing required trader communication. {% .lead %}
+Every trader event now enters the iPhone app as well as chosen channels, while
+trading-breaker changes stay iPhone-only. {% .lead %}
 
 This is the **subsystem lens** — the delivery machinery. For the per-canonical recipient mapping and channel coverage, that inventory lives in the raw spec; this chapter covers how an occurrence becomes (or doesn't become) a delivered alert.
 
@@ -47,11 +46,35 @@ is an important position event, but Pushover delivers it at normal priority.
 It stays visible without bypassing quiet hours; the bot already completed the
 protective TP adjustment, so no immediate operator action is required.
 
+### Trader iPhone channel
+
+Every notification addressed to a persisted, active trader automatically gains
+an iPhone copy. The trader does not add an app preference beside mail,
+Pushover, or Telegram. Virtual operator recipients are excluded.
+
+The phone registers its delivery route after permission is granted. Delivery
+attempts are still written to the shared audit when no phone is registered,
+which makes **More → Notifications** a complete trader history rather than a
+push receipt list. The API returns only the signed-in trader's app rows,
+newest first.
+
+Unread is phone-local. A Dashboard overlay, a tapped system alert, or a visible
+history row becomes read immediately. This keeps the iPhone badge useful
+without creating a web unread model.
+
+{% callout title="Breaker changes stay off operator channels" %}
+BSCS, the fast market-shock brake, and the trading health guard send their
+activation and recovery events only through the trader app channel. They are
+still audited and visible in history, but never duplicate into Pushover, mail,
+or Telegram.
+{% /callout %}
+
 ### Required onboarding mail
 
 Most notifications follow the trader's configured channel preferences. The
-registration welcome is deliberately mail-only because a newly registered
-trader may not have configured Pushover or Telegram. It is sent after public
+registration welcome deliberately requires mail because a newly registered
+trader may not have configured Pushover or Telegram. Its automatic app copy is
+also audited and reaches an already registered iPhone. It is sent after public
 registration commits and explains the first trading cycle, existing exchange
 activity, and trading risk. Re-enabling an existing account does not send it.
 

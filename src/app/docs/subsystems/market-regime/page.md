@@ -131,6 +131,14 @@ The tile collapses like the position cards: folded, it keeps the band, score,
 story, and resume line; expanding reveals the cadence, caps, scale, and
 signal rows.
 
+Each breaker transition also reaches the trader as an iPhone system
+notification and enters **More → Notifications**. Activation and recovery are
+separate events for the slow BSCS gate, the fast market-shock brake, and the
+trading health guard. These events are intentionally app-only: they do not
+duplicate into Pushover, mail, or Telegram. Opening a system notification
+returns the trader to Dashboard, where the current regime state remains the
+source of truth.
+
 ---
 
 ## Cross-lens links

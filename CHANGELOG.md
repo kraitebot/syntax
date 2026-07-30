@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.13.0] — 2026-07-30
+
+### Trader notification delivery
+
+- [ADDED] Notification routing now documents the automatic iPhone app channel,
+  trader-scoped history, and local visible-means-read behavior.
+- [ADDED] Market-regime documentation identifies BSCS, shock, and health-guard
+  activation and recovery as app-only trader notifications.
+- [VERIFIED] All 81 static pages build and the refreshed notification and
+  market-regime chapters return 200 locally.
+
 ## [0.12.0] — 2026-07-29
 
 ### Which day a figure belongs to
