@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.13.1] — 2026-08-01
+
+### iPhone unread badge behavior
+
+- [DOCUMENTED] A background trader notification sets the Kraite Home Screen
+  badge to `1`; opening the app clears it when the event becomes visible.
+- [VERIFIED] All 81 static pages build successfully.
+
 ## [0.13.0] — 2026-07-30
 
 ### Trader notification delivery

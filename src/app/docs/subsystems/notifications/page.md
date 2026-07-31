@@ -59,8 +59,10 @@ push receipt list. The API returns only the signed-in trader's app rows,
 newest first.
 
 Unread is phone-local. A Dashboard overlay, a tapped system alert, or a visible
-history row becomes read immediately. This keeps the iPhone badge useful
-without creating a web unread model.
+history row becomes read immediately. A notification received in the
+background sets the Home Screen icon badge to `1`; opening Kraite clears it
+when the event becomes visible. This keeps the iPhone badge useful without
+creating a web unread model.
 
 {% callout title="Breaker changes stay off operator channels" %}
 BSCS, the fast market-shock brake, and the trading health guard send their
