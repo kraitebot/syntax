@@ -16,8 +16,18 @@ warmup, and health for the active Kraite profile. {% .lead %}
 7. Warm and verify the product.
 
 The ingestion profile also tags changed owned packages before the application.
-Web profiles deploy to `kraite`; mobile follows its device or Apple
-distribution path; an unconfigured profile stops safely.
+Running `kraite-release all` there coordinates every existing Kraite repository:
+packages first, then ingestion, admin, public web, syntax, and mobile. Web
+profiles deploy to `kraite`; mobile follows its device or Apple distribution
+path; an unconfigured profile stops safely.
+
+Local Pest 5 gates always use coverage-backed Test Impact Analysis. Targeted
+work uses the filtered graph, while a release forces a fresh graph and runs
+the complete suite. CI remains exhaustive. Each PHP application publishes a
+separate exact production manifest and lock. Production only installs that
+committed runtime graph: no test command, factory autoload, Pest, PHPUnit, TIA,
+Boost, or other development package enters the server runtime, and dependency
+resolution never happens on the server.
 
 ## First-install modifier
 

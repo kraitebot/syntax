@@ -25,6 +25,12 @@ Routine SSH uses the `kraite` user. Root key login remains recovery access.
 Mobile never deploys to the VPS, and an unconfigured profile stops before any
 production mutation.
 
+Pest 5 projects run local tests through a coverage driver and TIA. A full
+release rebuilds the graph from the entire suite; everyday runs select only
+tests affected by local changes. Production uses a separate runtime-only
+manifest and exact lock, so no test runner, TIA graph, factory autoload, or
+development command is installed there.
+
 ## Related
 
 - [Kraite host](/docs/servers/kraite)

@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.14.0] — 2026-08-01
+
+### Laravel 13 release operations and notification behavior
+
+- [DOCUMENTED] The release reference now covers the coordinated portfolio
+  release, exact runtime-only Composer locks, and the production ban on test,
+  TIA, and development packages.
+- [DOCUMENTED] WAP closing and the read-only System SQL workspace match the
+  Laravel 13 application behavior shipped in this release.
+- [VERIFIED] All 81 static pages build successfully.
+
 ## [0.13.1] — 2026-08-01
 
 ### iPhone unread badge behavior
