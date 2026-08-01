@@ -55,6 +55,14 @@ every hour without sending a full per-symbol leverage sweep into the cron lane
 each time. The six-hour run is explicit and manually reproducible; normal
 hourly runs create zero leverage-bracket steps.
 
+### Money-guard evidence integrity
+
+`kraite:cron-check-drifts` counts terminal exchange-client failures from the
+structured API ledger. HTTP errors, vendor failures hidden inside HTTP 200,
+and transport failures with no response all remain visible because the final
+attempt records its error, completion time, and duration. A retry that
+recovers stays successful and does not falsely increase the cooling count.
+
 ---
 
 ## Runtime computation and retention controls

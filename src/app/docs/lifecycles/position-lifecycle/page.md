@@ -136,6 +136,18 @@ All order-placement atomics now follow the same contract:
 
 Any retry trigger is safe — reconciling against the exchange instead of abandoning confirmed work.
 
+### Decision: retry reads, reconcile ambiguous mutations (2026-08-01)
+
+A read-only exchange request that loses its connection before any HTTP
+response can be repeated safely. GET, HEAD, and OPTIONS work therefore enters
+the normal bounded step-retry path.
+
+An order placement, cancellation, or modification is different: the exchange
+may have accepted the mutation before its response was lost. Kraite leaves
+that step failed and visible rather than blindly replaying it. The existing
+order identity and reconciliation rules must establish the exchange outcome
+before another mutation can occur.
+
 ### Decision: immediate account stop at market entry (2026-07-23)
 
 Turning account trading off is an immediate new-exposure stop. The account
