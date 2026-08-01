@@ -20,6 +20,10 @@ The established-server sequence is cooldown, verified database backup, exact
 tag checkout, production dependency install, one migration pass, topology
 verification, diagnostics housekeeping, warmup, and health.
 
+The diagnostics boundary is fully quiescent: if the checked-in deploy script
+restarts Horizon, dispatch, or streams, those writers stop again before the
+baseline reset. Only warmup restarts them afterward.
+
 On first install, schema creation and the production seed happen before any
 worker starts. The seed must leave one sysadmin and zero traders, accounts,
 positions, and orders.

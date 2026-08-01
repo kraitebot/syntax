@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.14.1] — 2026-08-01
+
+### Quiescent deployment diagnostics
+
+- [DOCUMENTED] Any writer restarted by the ingestion deploy script is stopped
+  again before diagnostics reset; only warmup may restart it afterward.
+- [VERIFIED] All 81 static pages build successfully.
+
 ## [0.14.0] — 2026-08-01
 
 ### Laravel 13 release operations and notification behavior
