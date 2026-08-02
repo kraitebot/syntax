@@ -26,6 +26,7 @@ This is the **lifecycle lens** view of the indicator pipeline. For the indicator
       ▼
    ConcludeSymbolDirectionAtTimeframeJob
       │
+      ├─ stale provider candle → clear direction, stay silent, retry next cycle
       ├─ conclusive → persist LONG / SHORT + timeframe
       ├─ inconclusive → repeat at 4h → 12h → 1d
       └─ all exhausted → clear direction and mark invalid
@@ -81,6 +82,13 @@ Direction is concluded **once on Binance** and copied to every other exchange's 
 ## Freshness
 
 `indicators_synced_at` means the pipeline completed an end-to-end attempt, not necessarily that it produced a direction. A successful conclude stamps it, but so do unchanged indicator data, all-timeframe exhaustion, and a path-invalidated direction change. Transport or step failures that abort before those terminal paths remain visible as stale pipeline activity.
+
+The provider candle timestamp is checked before any direction vote. A missing,
+future, or older-than-the-last-closed-candle timestamp is treated as
+inconclusive immediately. Kraite clears the previous direction and pivot
+levels, marks the symbol invalid, emits no trader notification, and waits for
+the next normal refresh cycle to retry. This prevents a successful HTTP
+response containing frozen market data from becoming a new trading signal.
 
 ---
 

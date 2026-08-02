@@ -47,6 +47,16 @@ The goal is fewer rejected calls without materially reducing useful indicator
 throughput.
 {% /callout %}
 
+### Provider timestamps are part of the signal contract
+
+Every candle-comparison result must describe the latest market candle that was
+actually observed. A response can be HTTP 200 and still be unusable when that
+timestamp is missing, in the future, or older than the last closed candle for
+the requested timeframe. The direction lifecycle treats that response as
+inconclusive, clears any previous direction and pivots, stays silent to the
+trader, and retries on the next scheduled refresh. The local processing time
+does not make an old provider candle fresh.
+
 ---
 
 ## Why batched Query is not on the table
