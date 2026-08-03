@@ -23,9 +23,9 @@ This is the **subsystem lens** view. For the persistent process that replaced on
 | `kraite:cron-create-positions` | 3 min | yes | Open new positions |
 | `kraite:cron-fetch-klines --only-active-positions` | 5 min | yes | Refresh klines for tokens with open positions |
 | `kraite:cron-fetch-klines --reference-set ... --timeframe=15m` | 15 min | yes | Feed the market-shock reference basket |
+| `kraite:cron-fetch-klines --timeframe=1h` | hourly :05 | yes | 1h-bar refresh |
 | `kraite:cron-fetch-klines --timeframe=4h` | every 4h :05 | yes | 4h-bar refresh |
-| `kraite:cron-fetch-klines --timeframe=6h` | every 6h :05 | yes | 6h-bar refresh |
-| `kraite:cron-fetch-klines --timeframe=12h` | every 12h :05 | yes | 12h-bar refresh |
+| `kraite:cron-fetch-klines --timeframe=1d` | daily 00:05 | yes | 1d-bar refresh |
 | `kraite:cron-store-accounts-balances` | 5 min | yes | Snapshot account balances per exchange |
 | `kraite:cron-upsert-pnls` | 5 min | yes | Backfill exchange-reported PnL |
 | `kraite:cron-refresh-exchange-symbols` | hourly :15 except 00/06/12/18 | yes | Refresh catalogues without leverage-bracket work |

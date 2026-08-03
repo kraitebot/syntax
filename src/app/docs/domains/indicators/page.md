@@ -10,10 +10,10 @@ This is the **business-domain lens** view. For the throttler that gates TAAPI ca
 
 ## The active timeframe set
 
-The production Kraite singleton currently stores `["1h", "4h", "12h", "1d"]`. A symbol starts at `1h`; only an inconclusive result advances it to `4h`, then `12h`, then `1d`. It therefore consumes seven readouts when the first timeframe concludes and at most 28 when all four timeframes are exhausted.
+The production Kraite singleton stores `["1h", "4h", "1d"]`. A symbol starts at `1h`; only an inconclusive result advances it to `4h`, then `1d`. It therefore consumes seven readouts when the first timeframe concludes and at most 21 when all three timeframes are exhausted.
 
-{% callout type="warning" title="Known timeframe configuration drift" %}
-The migration that introduced `6h` intended `["4h", "6h", "12h", "1d"]`, while the current production row and seeder still contain `1h` instead of `6h`. Separately, full-universe kline refreshes are scheduled for `4h`, `6h`, and `12h`, with a `15m` reference-set refresh. This page records verified runtime state; it does not choose which list is the intended product rule.
+{% callout title="Common provider ladder" %}
+The ladder is limited to intervals accepted by every required indicator and candle endpoint. The `12h` interval was removed after TAAPI's direct candle endpoint rejected it, despite listing it in the broader provider specification. Full-universe kline refreshes now run for `1h`, `4h`, and `1d`; the separate market-shock reference set remains `15m`.
 {% /callout %}
 
 ---

@@ -28,7 +28,7 @@ This is the **lifecycle lens** view of the indicator pipeline. For the indicator
       │
       ├─ stale provider candle → clear direction, stay silent, retry next cycle
       ├─ conclusive → persist LONG / SHORT + timeframe
-      ├─ inconclusive → repeat at 4h → 12h → 1d
+      ├─ inconclusive → repeat at 4h → 1d
       └─ all exhausted → clear direction and mark invalid
       │
       ▼
@@ -59,14 +59,13 @@ Production has five active directional indicators (`candle-comparison`, three EM
 
    1h: inconclusive
    4h: inconclusive
-   12h: inconclusive
    1d: inconclusive     ─► clear direction, mark invalid
 ```
 
 The configured list is an ordered fallback path, not a multi-timeframe vote. A first-time or unchanged direction can conclude immediately. A direction change must reach the configured minimum timeframe index and keep a consistent path: earlier evaluated timeframes may be inconclusive or agree with the new direction, but cannot contradict it.
 
-{% callout type="warning" title="Known timeframe configuration drift" %}
-Production currently walks `1h → 4h → 12h → 1d`. A migration intended `4h → 6h → 12h → 1d`, while the seeder still restores the production list. The runtime conflict is documented; the intended product list remains unresolved.
+{% callout title="Configured production path" %}
+Production walks `1h → 4h → 1d`. This common provider ladder is stored on the Kraite singleton and seeded with the same order.
 {% /callout %}
 
 ---
