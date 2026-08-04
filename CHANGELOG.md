@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.14.2] — 2026-08-04
+
+### Laravel-owned operational monitoring
+
+- [DOCUMENTED] The scheduler chapter now shows the Laravel-owned fleet
+  heartbeat and operational snapshot cadences, replacing the retired monitor
+  runner shape.
+- [VERIFIED] All 81 static pages build successfully; the scheduler chapter
+  returns HTTP 200 locally.
+
 ## [0.14.1] — 2026-08-01
 
 ### Quiescent deployment diagnostics
