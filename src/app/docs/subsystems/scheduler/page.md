@@ -18,6 +18,8 @@ This is the **subsystem lens** view. For the persistent process that replaced on
 | `kraite:cron-refresh-binance-listen-keys` | 1 min | no | Keep Binance listenKeys alive past 60-min auto-expiry |
 | `kraite:cron-check-binance-listen-keys-stale` | 5 min | no | Detect missing/stale listen keys or a per-account socket heartbeat older than 15 min |
 | `kraite:cron-check-system-health` | 7 min | no | Unified health + maintenance sentinel |
+| `kraite:fleet-report` | 5 min | no | Publish the single host's runtime heartbeat and deployed version |
+| `kraite:cron-record-operational-snapshot` | 30 min | no | Record bounded failure, position, order, and gate state for operators |
 | `kraite:cron-check-drifts` | 5 min | yes | Position drift, protection, and money guard |
 | `kraite:monitor-narrate` | minutes 7, 27, 47 | yes | Document an already-open money-guard incident |
 | `kraite:cron-create-positions` | 3 min | yes | Open new positions |
@@ -54,6 +56,11 @@ The split symbol schedule keeps catalogue, token, and availability data fresh
 every hour without sending a full per-symbol leverage sweep into the cron lane
 each time. The six-hour run is explicit and manually reproducible; normal
 hourly runs create zero leverage-bracket steps.
+
+The fleet heartbeat and operational snapshot are scheduler-owned. The heartbeat
+feeds the admin dashboard and health watchdog from Redis; the snapshot records
+bounded operational evidence for the jobs log. Neither relies on a standalone
+shell monitor or a systemd timer.
 
 ### Money-guard evidence integrity
 
