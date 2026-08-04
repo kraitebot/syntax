@@ -62,6 +62,12 @@ feeds the admin dashboard and health watchdog from Redis; the snapshot records
 bounded operational evidence for the jobs log. Neither relies on a standalone
 shell monitor or a systemd timer.
 
+Every command that prevents overlaps uses a lease bounded to its own cadence
+or expected recovery window. Laravel's day-long default is not used: an
+interrupted minute or five-minute task must not silently suppress the rest of
+that day's safety checks. Long retention and backup jobs retain longer bounded
+leases appropriate to their workload.
+
 ### Money-guard evidence integrity
 
 `kraite:cron-check-drifts` counts terminal exchange-client failures from the

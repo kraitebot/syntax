@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.14.3] — 2026-08-04
+
+### Partial-close and recovery guarantees
+
+- [DOCUMENTED] Managed entry and close partial fills share one position
+  quantity reconciliation rule across push and polling paths.
+- [DOCUMENTED] Scheduler leases are cadence-bounded, and the order lifecycle
+  records the SFPUSDT #4365 incident that exposed the old entry-only rule.
+- [VERIFIED] All 81 static pages build; four refreshed chapters return HTTP
+  200 locally.
+
 ## [0.14.2] — 2026-08-04
 
 ### Laravel-owned operational monitoring

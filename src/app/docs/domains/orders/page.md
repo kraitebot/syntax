@@ -68,6 +68,11 @@ Order state changes flow into Kraite via two paths:
 
 The push path is the primary fill driver since 2026-05-03. Polling exists only to catch missed frames in the rare WS-frame-loss / reconnect-race case.
 
+Every managed partial fill also refreshes the owning position's exchange
+quantity. This applies equally to DCA entries, take-profit limits and markets,
+and stop-market closes. The shared rule prevents a correctly recorded close
+fill from leaving position exposure at its pre-fill value.
+
 ---
 
 ## Why every order has its own idempotency anchor

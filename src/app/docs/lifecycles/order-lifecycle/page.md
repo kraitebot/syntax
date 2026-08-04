@@ -123,6 +123,22 @@ Binance/Bitget polling. If a legitimate correction becomes stale before
 pickup, it finishes as a benign skip instead of a failed workflow.
 {% /callout %}
 
+### Decision: every managed partial fill reconciles exposure (2026-08-04)
+
+A partial fill on a DCA `LIMIT`, take-profit limit or market, or stop-market
+close dispatches `SyncPositionQuantityFromExchangeJob`. Push remains the fast
+path; `PrepareSyncOrdersJob` applies the same managed-type rule every five
+minutes when a frame is missed. Fresh exchange quantity replaces the local
+quantity before later protection and drift decisions consume it.
+
+{% callout type="warning" title="Why close orders are included" %}
+SFPUSDT position #4365 partially filled four units of its take-profit order.
+The order event and exchange quantity were correct, but both synchronization
+paths recognised partial fills only for DCA `LIMIT` entries. The position
+remained at `718` while Binance held `714`, causing repeated alert-only drift
+notifications. Entry and close partial fills now share one exposure rule.
+{% /callout %}
+
 A specific high-frequency case: **manual close detection.** When a reduce-only FILL arrives for an order Kraite *doesn't own* against a position Kraite *does* own, the daemon dispatches `PreparePositionReplacementJob` immediately — not waiting for polling to catch the EXPIRED legs of the Kraite-owned orders. That workflow remains the authority for deciding whether the position is flat or still has residual exposure.
 
 The following flat `ACCOUNT_UPDATE` adds a separate risk action. Once exchange quantity is zero, `CancelPositionOpenOrdersJob` is created as a high-priority root and cancels only live DCA LIMIT orders for that position. It does not wait behind the replacement tree and does not cancel TP or SL protection. Hedge updates match the local direction; a one-way `BOTH` update derives the logical side from signed quantity. Duplicate frames collapse into the same live cancellation.

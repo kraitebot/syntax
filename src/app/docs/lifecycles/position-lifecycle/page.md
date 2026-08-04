@@ -236,6 +236,7 @@ Exchange REST responses can be stale or can carry vendor errors inside successfu
 - `LIMIT` / `STOP-MARKET` / `PROFIT-*` CANCELLED, EXPIRED, or REJECTED → `PreparePositionReplacementJob` (recreate the missing DCA / TP / SL order); deduped by pending step check
 - `PROFIT-*` or `STOP-MARKET` FILLED → `ClosePositionJob`; deduped (added 2026-04-21; double-fire was previously possible when TP and SL filled in the same sync cycle)
 - `LIMIT` FILLED → `ApplyWapJob`; deduped
+- `LIMIT`, `PROFIT-*`, or `STOP-MARKET` PARTIALLY_FILLED → `SyncPositionQuantityFromExchangeJob`; the five-minute polling path repeats this same managed-order rule when push was missed
 
 ### Decision: status guard on sync entry (2026-04-21)
 
