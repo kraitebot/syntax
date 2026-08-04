@@ -141,15 +141,18 @@ Since then, the health watchdog (`kraite:cron-check-system-health`) is the one s
 
 Warmup starts Horizon and the daemons before it resumes the scheduler on the
 same host. It then starts a 10-minute recovery grace for the two health signals
-produced through the default dispatcher: account-balance history and
-indicators. Those timestamps can still describe the pre-deploy state until the
-first producer jobs finish.
+produced through the default dispatcher—account-balance history and
+indicators—and the transitional runtime-unit snapshot captured before the
+scheduler starts. Those values can still describe the pre-deploy state until
+the first producer jobs and final fleet report finish.
 
-The grace does not mute mark prices, queues, Redis, the database, daemons,
-scheduler liveness, or fleet heartbeats. Indicator freshness also checks the
-exact symbol's producer workflow: a recent query or conclusion in progress is
-an active repair, while terminal work or an abandoned old step cannot suppress
-a real alert.
+The grace does not mute mark prices, queues, Redis, the database, direct daemon
+or scheduler liveness, or fleet silence. Release choreography writes a fresh
+fleet report after the scheduler reaches RUNNING, and runtime-unit alerts
+resume automatically after recovery. Indicator freshness also checks the exact
+symbol's producer workflow: a recent query or conclusion in progress is an
+active repair, while terminal work or an abandoned old step cannot suppress a
+real alert.
 
 {% callout title="Why the grace is narrow" %}
 On 2026-07-16 the balance watchdog ran seconds before the first post-warmup

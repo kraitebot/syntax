@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.14.4] — 2026-08-04
+
+### Post-warmup monitoring accuracy
+
+- [DOCUMENTED] The scheduler chapter now distinguishes transitional
+  runtime-unit snapshots from independent daemon and scheduler liveness.
+- [DOCUMENTED] Release warmup publishes a final fleet report after the
+  scheduler reaches RUNNING, while bounded recovery prevents false critical
+  alerts.
+
 ## [0.14.3] — 2026-08-04
 
 ### Partial-close and recovery guarantees
