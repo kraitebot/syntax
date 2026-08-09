@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.14.5] — 2026-08-09
+
+### Manual-close evidence
+
+- [DOCUMENTED] The user-data, position-lifecycle, dual-mode, and open-position
+  chapters now describe direct-stream and confirmed-flat fallback attribution.
+- [DOCUMENTED] One-way and hedge-mode reducing-side rules, forced-close
+  exclusions, and exact closing-price preservation are explicit.
+- [VERIFIED] All 81 static pages build; refreshed chapters return HTTP 200.
+
 ## [0.14.4] — 2026-08-04
 
 ### Post-warmup monitoring accuracy

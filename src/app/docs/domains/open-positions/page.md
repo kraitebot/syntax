@@ -92,6 +92,12 @@ Before a REST response can drive replacement, WAP, quantity sync, drift follow-u
 
 One valid missing result only schedules a 20-second high-priority confirmation. The second valid flat snapshot may cancel Kraite-owned opening LIMITs and let the owning workflow continue. Reappearance or invalid data preserves every order. A direct User Data Stream zero-quantity event remains immediate because it is exchange-pushed position truth rather than a REST absence inference.
 
+When the close frame itself was dropped, the confirmed-flat path attributes
+the exit from archived events and bounded Binance trade/order/algo-order and
+force-order evidence. Only an external reducing fill is labeled manual;
+Kraite-owned, forced, ambiguous, or unavailable evidence never is. The final
+reducing trade price remains the source of closing data.
+
 ---
 
 ## Selection priority order

@@ -217,6 +217,13 @@ As of 2026-04-30, sync runs in two layers:
 
 A manual close has an additional push-side guard. A zero-quantity account update starts `CancelPositionOpenOrdersJob` independently on the priority queue, removing only the position's live DCA LIMIT orders while `PreparePositionReplacementJob` continues the normal flat-versus-residual decision. This separation removes immediate re-entry risk without replacing lifecycle ownership.
 
+Filled exchange-side closes use the same mode-aware boundary: one-way orders
+need the reducing side and explicit close intent, while hedge orders prove the
+exact `LONG` or `SHORT` side. Forced, ambiguous, or non-unique evidence does
+not receive manual attribution. When a stream frame is missing, the confirmed
+flat path checks archived and bounded Binance history and preserves the final
+reducing trade's exact price.
+
 ### Decision: REST absence requires confirmed exchange truth (2026-07-15)
 
 Every REST workflow that can act on a missing exchange position now uses the same validated snapshot contract across Binance, Bitget, Bybit, and KuCoin. Vendor errors hidden inside HTTP 200, malformed rows, and raw-versus-normalized count mismatches are unknown state; they cannot overwrite the last trusted account snapshot or prove that a position is flat.

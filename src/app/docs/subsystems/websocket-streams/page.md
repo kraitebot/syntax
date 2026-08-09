@@ -82,7 +82,11 @@ An account-position update does not enter the order execution-type allowlist. It
 The branch matches `LONG` and `SHORT` explicitly in hedge mode. A one-way `BOTH` row matches only when there is one locally-open position for the account and symbol. Non-zero updates, unrelated symbols, ambiguous local matches, and positions without a live LIMIT are passive. Replayed frames deduplicate against the live emergency cancellation.
 
 {% callout type="warning" title="Why this is separate from replacement" %}
-The reduce-only order fill still starts `PreparePositionReplacementJob`, which queries the exchange and owns final close-versus-replace reconciliation. The flat account update does not bypass that workflow. It removes only the immediate exposure risk: an opening LIMIT must not remain executable after the operator has flattened the position. TP and SL orders stay under the normal lifecycle.
+An external closing fill still starts `PreparePositionReplacementJob`, which queries the exchange and owns final close-versus-replace reconciliation. One-way frames must carry the reducing side plus reduce-only or close-position intent; hedge frames must carry the exact `LONG` or `SHORT` side because Binance rejects reduce-only in hedge mode. Forced liquidation/ADL evidence, partial fills, ambiguous sides, and non-unique positions stay passive. The replacement step keeps the exact reducing-trade price.
+
+If the first user-data frame is missing, confirmed-flat handling checks archived filled events before bounded Binance user-trades, regular/algo orders, and force-order evidence. Only an externally proven fill receives manual-close attribution. Kraite-owned, forced, malformed, and unknown evidence stays automatic or unclassified.
+
+The zero-quantity account update remains an independent safety action. It starts `CancelPositionOpenOrdersJob` on the priority queue, removing only the position's live DCA LIMIT orders while `PreparePositionReplacementJob` continues the normal flat-versus-residual decision. This separation removes immediate re-entry risk without replacing lifecycle ownership.
 {% /callout %}
 
 The normalized position-update contract is exchange-neutral. Binance is the first producer; future Bitget, Bybit, and KuCoin private streams can feed the same worker rule without adding an exchange-specific cancellation path.
