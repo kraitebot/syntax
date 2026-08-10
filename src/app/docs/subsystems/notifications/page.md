@@ -38,6 +38,22 @@ Because the Threshold only sees what survives the Throttler, the two must be com
 
 The default control. A `cache_duration` window per `(canonical, relatable)` collapses bursts of the same alert into one send. With a `cache_key` it uses an atomic cache claim (`Cache::add`) so multiple worker servers racing the same event still emit only once. This is what stops, e.g., a flapping price daemon from paging the admin every second.
 
+### Drift safety notifications
+
+The drift spotter uses three dedicated operator canonicals:
+
+- `position_exchange_only_detected` — a fresh exchange position still has no
+  matching local open position;
+- `orders_exchange_only_detected` — fresh exchange orders still have no
+  matching local order rows;
+- `account_drift_snapshot_failed` — required exchange evidence was unavailable,
+  so no drift conclusion was made.
+
+The first two are critical and account-scoped. The incomplete-snapshot alert is
+high severity and prevents partial exchange data from becoming a false missing-
+protection alarm. All three remain alert-only: they never cancel orders, close
+positions, or clear a trading halt.
+
 ### Delivery priority follows required action
 
 Severity and device interruption are separate decisions. A successful WAP

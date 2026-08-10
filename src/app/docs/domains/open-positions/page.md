@@ -98,6 +98,13 @@ force-order evidence. Only an external reducing fill is labeled manual;
 Kraite-owned, forced, ambiguous, or unavailable evidence never is. The final
 reducing trade price remains the source of closing data.
 
+The drift spotter follows the same exchange-truth boundary. A quiet
+missing-protection result is only a candidate until fresh local state and a
+validated exchange position read agree that exposure remains open. Exchange-
+only positions and orders are rechecked against newly persisted local rows, so
+a close or persistence race does not create a false alarm. Failed required
+reads stay inconclusive and never authorize an automatic mutation.
+
 ---
 
 ## Selection priority order

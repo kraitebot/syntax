@@ -236,6 +236,21 @@ The first valid flat result schedules a high-priority confirmation after 20 seco
 Exchange REST responses can be stale or can carry vendor errors inside successful HTTP envelopes. Acting on one apparent absence could cancel the DCA ladder while exposure still exists. The direct User Data Stream zero-quantity event remains immediate because it is already an exchange position event; REST absence pays a 20-second confirmation delay to avoid destructive false-flat action.
 {% /callout %}
 
+### Decision: drift snapshots revalidate exposure before alerting (2026-08-10)
+
+The five-minute drift spotter treats each exchange comparison as a candidate,
+not final truth. Before a missing-protection alert, it rechecks that the local
+position is still active and quiet, then confirms the matching exchange
+position with a fresh validated snapshot. A position that closes during the
+comparison is suppressed; a still-open exposure remains actionable.
+
+Exchange-only position and order candidates receive the same fresh local-state
+recheck. Required conditional-order calls and final exposure confirmation are
+mandatory evidence. A failed call emits an incomplete-snapshot alert and makes
+no drift conclusion from partial data. See [open positions](/docs/domains/open-positions)
+for the domain invariant and [notifications](/docs/subsystems/notifications)
+for the alert meanings.
+
 ### Observer-driven side effects
 
 `OrderObserver::updated()` reacts to status drift:
