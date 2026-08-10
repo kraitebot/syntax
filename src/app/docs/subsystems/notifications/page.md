@@ -54,6 +54,20 @@ high severity and prevents partial exchange data from becoming a false missing-
 protection alarm. All three remain alert-only: they never cancel orders, close
 positions, or clear a trading halt.
 
+### Production monitor alerts
+
+The bounded operator monitor uses a separate `kraite_production_monitor`
+canonical. Every finding carries a stable signal, so an unchanged
+non-critical condition is delivered once per day instead of on every monitor
+pass. Different signals remain independent. A recovery uses a separate
+`recovered:<signal>` bucket, so the clear state is visible without reopening
+the unresolved alert. Verified trading-safety exposure can explicitly bypass
+the throttle and page on every pass.
+
+The monitor's opening-gate verdict comes from the engine's effective
+`Kraite::canTrade()` decision. A nullable stored value is not treated as a
+false gate; it means the configured/default policy still allows trading.
+
 ### Delivery priority follows required action
 
 Severity and device interruption are separate decisions. A successful WAP

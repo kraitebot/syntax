@@ -62,6 +62,12 @@ feeds the admin dashboard and health watchdog from Redis; the snapshot records
 bounded operational evidence for the jobs log. Neither relies on a standalone
 shell monitor or a systemd timer.
 
+The health watchdog also checks the public web and admin endpoints. During a
+planned sibling Laravel deployment it suppresses only an HTTP 503 backed by
+that exact application's fresh `storage/framework/down` marker. The existing
+45-minute stuck-maintenance boundary expires that exception; HTTP 500s,
+missing markers, and stale markers remain alertable.
+
 Every command that prevents overlaps uses a lease bounded to its own cadence
 or expected recovery window. Laravel's day-long default is not used: an
 interrupted minute or five-minute task must not silently suppress the rest of
@@ -140,7 +146,9 @@ Since then, the health watchdog (`kraite:cron-check-system-health`) is the one s
 ### Recovery after warmup
 
 Warmup starts Horizon and the daemons before it resumes the scheduler on the
-same host. It then starts a 10-minute recovery grace for the two health signals
+same host. Deploy leaves those long-lived writers stopped after the
+diagnostics reset, so warmup is their sole restart owner. It then starts a
+10-minute recovery grace for the two health signals
 produced through the default dispatcher—account-balance history and
 indicators—and the transitional runtime-unit snapshot captured before the
 scheduler starts. Those values can still describe the pre-deploy state until

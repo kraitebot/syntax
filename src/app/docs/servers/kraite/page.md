@@ -94,7 +94,10 @@ at the admin route boundary.
 
 Established releases cool the runtime, verify a backup, deploy exact tags,
 migrate once from ingestion, clear deployment diagnostics, and warm in startup
-order. Admin and the public site do not run duplicate Horizon instances.
+order. Deploy leaves long-lived writers stopped until warmup owns their single
+restart. Admin and the public site do not run duplicate Horizon instances.
+The light release omits only the backup and restore rehearsal; its migration,
+diagnostics, warmup, and health gates remain active.
 
 ## Cross-lens links
 
