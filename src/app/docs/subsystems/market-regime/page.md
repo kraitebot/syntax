@@ -139,17 +139,12 @@ duplicate into Pushover, mail, or Telegram. Opening a system notification
 returns the trader to Dashboard, where the current regime state remains the
 source of truth.
 
-The hourly score also has a deliberately quiet notification state machine.
-The iPhone alerts when BSCS leaves zero, reaches the maximum `100`, or returns
-from a non-zero value to zero. Intermediate non-zero changes stay silent, as
-do repeated zero and repeated maximum readings. A direct `0 → 100` move emits
-the maximum event once.
-
-Score alerts never replace breaker alerts. A `60 → 80` move is silent as a
-generic score change but still alerts because the Critical threshold pauses
-new openings. Returning to score zero reports that the warning signals are
-clear; it does not promise that an existing cooldown ended early. The separate
-recovery event confirms when openings resume.
+Generic BSCS score-transition alerts are disabled. A score leaving zero,
+reaching `100`, or returning to zero remains visible in the regime state and
+history but does not create a generic trader notification. The separate
+app-only breaker events remain the user-facing signal when BSCS pauses or
+resumes new openings. Market-shock and trading-guard pause/recovery events
+keep the same app-only policy.
 
 ---
 

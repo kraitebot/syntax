@@ -70,11 +70,16 @@ false gate; it means the configured/default policy still allows trading.
 
 ### Delivery priority follows required action
 
-Severity and device interruption are separate decisions. A successful WAP
-application remains high severity in audit and email presentation because it
-is an important position event, but Pushover delivers it at normal priority.
-It stays visible without bypassing quiet hours; the bot already completed the
-protective TP adjustment, so no immediate operator action is required.
+Severity and device interruption are separate decisions. Routine WAP
+recalculations are silent. When the penultimate DCA rung fills, the successful
+WAP emits one high-severity `position_penultimate_limit_filled` alert through
+the trader app, including ladder depth and TP movement. It never routes
+through email, Pushover, or an operator recipient.
+
+After final exchange PnL exists, a closed position that reached the penultimate
+rung emits one app-only `position_high_profit_closed` alert. Positions below
+that rung remain silent. Generic close, email, Pushover, and operator copies
+are not sent for this lifecycle path.
 
 ### Trader iPhone channel
 

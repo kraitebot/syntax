@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.14.6] — 2026-08-12
+
+### Quiet deep-ladder notifications
+
+- [DOCUMENTED] Position lifecycle and notification chapters now describe the
+  penultimate DCA app alert and the app-only qualifying close alert.
+- [DOCUMENTED] BSCS score-transition alerts are marked inactive; pause and
+  recovery events remain app-only.
+- [VERIFIED] Refreshed chapters build and return HTTP 200.
+
 ## [0.14.5] — 2026-08-09
 
 ### Manual-close evidence

@@ -353,6 +353,15 @@ Two-layer fix. The crash class is closed at the source: every Binance order-resp
 - Mid-flight statuses (`syncing` / `waping` / `closing` …) are skipped — a workflow owns the row. No quiet window (that gate is what blinded Scope 1 to FILUSDT). The heal runs even while the bot is cooled: existing positions keep trading and must stay protected.
 - One `position_wap_self_healed` pushover per heal; re-fires every 5 minutes while under-coverage persists — a repeating ping means the heal chain itself is failing. Kill switch: `--skip-wap-heal`.
 
+### Penultimate-ladder alert (2026-08-11)
+
+Routine WAP recalculations are silent. When a position fills its penultimate
+DCA LIMIT rung (`total_limit_orders - 1`), the successful WAP emits one
+high-severity alert to the trader's iPhone app. The alert includes ladder
+depth and before/after take-profit values; it never routes through email,
+Pushover, or an operator recipient. A successful app audit record prevents a
+later WAP retry from sending a second alert for the same position.
+
 ---
 
 ## Close
@@ -371,7 +380,14 @@ confirm that the trader manually flattened the position.
 5. `QueryAccountPositionsJob` — verify
 6. `VerifyPositionResidualAmountJob` — hard gate against partial closes or
    untrusted position evidence
-7. `UpdateRemainingClosingDataJob` — closing_price, was_fast_traded, high-profit notification, **bulk** update `reference_status = status` for all orders (single transactional UPDATE, not per-order `updateSaving` — avoids half-updated state on mid-loop failure)
+7. `UpdateRemainingClosingDataJob` — closing_price, was_fast_traded,
+   exchange PnL, one close notification for positions that reached the
+   penultimate DCA rung, and **bulk** update `reference_status = status` for
+   all orders (single transactional UPDATE, not per-order `updateSaving` —
+   avoids half-updated state on mid-loop failure). The close notification is
+   app-only and uses the high-profit canonical; positions below the penultimate
+   rung remain silent. Generic close, email, Pushover, and operator copies are
+   not sent.
 8. `UpdatePositionStatus` → `closed`
 
 Exposure is always removed before protection. If the exchange close fails,
@@ -404,14 +420,20 @@ Canonicals dispatched during the lifecycle, each cache-throttled per position to
 | Canonical | Trigger | Priority | Status |
 |---|---|---|---|
 | `position_opened` | `ActivatePositionJob` success | low | **muted** 2026-04-23 |
-| `position_closed` | close workflow complete | low | **muted** 2026-04-23 |
-| `position_wap_applied` | `CalculateWap` success | high | active |
-| `position_high_profit_closed` | close + N filled limits hit | info | active |
+| `position_closed` | generic close workflow event | low | **inactive** 2026-08-11 |
+| `position_wap_applied` | legacy routine WAP event | high | **inactive** 2026-08-11 |
+| `position_penultimate_limit_filled` | penultimate DCA rung filled | high | app-only |
+| `position_high_profit_closed` | qualifying close after penultimate rung | info | app-only |
 | `position_opening_failed` | status transition to `failed` | high | active (2026-04-23) |
 | `position_pump_cooldown_triggered` | spike detected on close | high | active |
 | `position_residual_detected` | residual on exchange post-close | critical | active |
 
-`position_opened` / `position_closed` were muted on Bruno's call — too chatty on a 6×6 (12-slot) book. Their dormant dispatch paths have been removed. A future return must be an explicit digest or quiet-hours-aware feature rather than reactivating unused lifecycle methods.
+`position_opened` / `position_closed` were muted on Bruno's call — too chatty
+on a 6×6 (12-slot) book. Their dormant dispatch paths have been removed. The
+routine WAP canonical is also inactive. The only WAP milestone alert is the
+penultimate DCA rung, delivered once to the trader app. A qualifying close
+uses the same app-only policy after final exchange PnL exists. Generic close,
+email, Pushover, and operator copies are not sent.
 
 ---
 
