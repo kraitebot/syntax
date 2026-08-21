@@ -76,10 +76,11 @@ WAP emits one high-severity `position_penultimate_limit_filled` alert through
 the trader app, including ladder depth and TP movement. It never routes
 through email, Pushover, or an operator recipient.
 
-After final exchange PnL exists, a closed position that reached the penultimate
-rung emits one app-only `position_high_profit_closed` alert. Positions below
-that rung remain silent. Generic close, email, Pushover, and operator copies
-are not sent for this lifecycle path.
+After final exchange PnL is positive, a closed position that reached the
+penultimate rung emits one app-only `position_high_profit_closed` alert.
+Positions with loss, break-even, or insufficient ladder depth remain silent.
+Generic close, email, Pushover, and operator copies are not sent for this
+lifecycle path.
 
 ### Trader iPhone channel
 

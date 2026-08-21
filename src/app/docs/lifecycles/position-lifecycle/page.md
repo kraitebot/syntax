@@ -423,7 +423,7 @@ Canonicals dispatched during the lifecycle, each cache-throttled per position to
 | `position_closed` | generic close workflow event | low | **inactive** 2026-08-11 |
 | `position_wap_applied` | legacy routine WAP event | high | **inactive** 2026-08-11 |
 | `position_penultimate_limit_filled` | penultimate DCA rung filled | high | app-only |
-| `position_high_profit_closed` | qualifying close after penultimate rung | info | app-only |
+| `position_high_profit_closed` | positive exchange PnL after penultimate rung | info | app-only |
 | `position_opening_failed` | status transition to `failed` | high | active (2026-04-23) |
 | `position_pump_cooldown_triggered` | spike detected on close | high | active |
 | `position_residual_detected` | residual on exchange post-close | critical | active |
@@ -432,8 +432,9 @@ Canonicals dispatched during the lifecycle, each cache-throttled per position to
 on a 6×6 (12-slot) book. Their dormant dispatch paths have been removed. The
 routine WAP canonical is also inactive. The only WAP milestone alert is the
 penultimate DCA rung, delivered once to the trader app. A qualifying close
-uses the same app-only policy after final exchange PnL exists. Generic close,
-email, Pushover, and operator copies are not sent.
+uses the same app-only policy only after final exchange PnL is positive; loss
+and break-even closes stay silent. Generic close, email, Pushover, and
+operator copies are not sent.
 
 ---
 
