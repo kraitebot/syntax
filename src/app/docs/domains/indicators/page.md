@@ -35,16 +35,16 @@ applied through the production environment on Kraite's indicator lane.
 
 {% callout title="Why 68 and 221 ms — the 429 story" %}
 The indicator workers share **one** Redis throttle bucket on Kraite, and TAAPI
-limits per API key. Running at the full 75-request ceiling created recurring
-429 responses during concurrent fan-out. The 68-request profile keeps the
-existing throttler behavior while leaving roughly 10% headroom; 221 ms spreads
-the nominal allowance across the window.
+limits per API key. Each real TAAPI v2 request reserves its slot immediately
+before it crosses the provider boundary. The 68-request profile leaves roughly
+10% headroom and the 221 ms pace spreads the nominal allowance across the
+window, including a controlled Futures-to-Spot fallback.
 
-This tuning deliberately does not redesign admission. Some 429 responses may
-still occur when concurrent workers cross TAAPI's differently aligned window.
-They remain benign: the step reschedules without consuming its retry budget.
-The goal is fewer rejected calls without materially reducing useful indicator
-throughput.
+TAAPI v2 receives Binance market candles with one calculation request per
+source attempt; the direction lifecycle still receives the established result
+shape. A provider 429 may be recoverable for one job, but it is never a green
+post-warmup health state. Release health requires a clean provider-error window
+before the scheduler is declared safe.
 {% /callout %}
 
 ### Provider timestamps are part of the signal contract
