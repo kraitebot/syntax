@@ -51,8 +51,11 @@ and one Horizon instance consumes every physical queue.
 
 The mutable Laravel cache is shared safely between the deployment account and
 PHP-FPM. Compiled Blade files are explicitly created as non-executable `0644`
-cache files, independent of the runtime process umask. That preserves normal
-view compilation without treating generated PHP as executable deployment code.
+cache files, independent of the runtime process umask. CLI workers and
+PHP-FPM use distinct compiled-view namespaces, so either runtime can preserve
+Laravel's source-derived timestamps without blocking the other. That preserves
+normal view compilation without treating generated PHP as executable deployment
+code.
 
 ## Why one server
 
