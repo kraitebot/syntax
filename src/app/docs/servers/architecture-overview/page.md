@@ -47,6 +47,13 @@ and one Horizon instance consumes every physical queue.
 5. Binance streams feed mark prices and account events back into Redis jobs.
 6. MySQL records durable trading and operational state.
 
+### Deploy-time runtime cache contract
+
+The mutable Laravel cache is shared safely between the deployment account and
+PHP-FPM. Compiled Blade files are explicitly created as non-executable `0644`
+cache files, independent of the runtime process umask. That preserves normal
+view compilation without treating generated PHP as executable deployment code.
+
 ## Why one server
 
 {% callout title="Private-use architecture" %}
